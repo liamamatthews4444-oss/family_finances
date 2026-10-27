@@ -95,21 +95,22 @@ def load_history():
 # --- Live Google Sheet Connection ---
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpkmYNnZU1yZr__I9f0UwDbJxG7Hr68Kt7X4IfzO1FYRT4LjcxIVtI68ewN6E0sQfx711PSk8fJVlB/pub?gid=184144388&single=true&output=csv"
 
-@st.cache_data(ttl=300)
-@st.cache_data(ttl=30)
-def load_live_sheet_data():
+@st.cache_data(ttl=60)
+def load_live_sheet_data(cache_buster=0):
     try:
-        df_hist = pd.read_csv(SHEET_CSV_URL, header=None, usecols=[0, 1])
+        fetch_url = f"{SHEET_CSV_URL}&_cb={cache_buster}"
+        df_hist = pd.read_csv(fetch_url, header=None, usecols=[0, 1])
         df_hist.columns = ["Date_Raw", "Bal_Raw"]
         df_hist["Date"] = pd.to_datetime(df_hist["Date_Raw"], format="%d/%m/%Y", errors="coerce")
         clean_bal = df_hist["Bal_Raw"].astype(str).str.replace(",", "", regex=False).str.replace("£", "", regex=False).str.strip()
         df_hist["Balance"] = pd.to_numeric(clean_bal, errors="coerce")
         df_hist = df_hist.dropna(subset=["Date", "Balance"]).sort_values("Date")
-        df_hist["Debt Remaining (£)"] = df_hist["Balance"].apply(lambda x: abs(x) if x < 0 else 0)
-        df_hist["Stored Cash (£)"] = df_hist["Balance"].apply(lambda x: x if x > 0 else 0)
-        chart_df = df_hist.set_index("Date")[["Debt Remaining (£)", "Stored Cash (£)"]]
+        
+        # Real signed balance: stays negative (below £0) for true debt tracking
+        df_hist["Net Wealth / Debt (£)"] = df_hist["Balance"]
+        chart_df = df_hist.set_index("Date")[["Net Wealth / Debt (£)"]]
 
-        df_full = pd.read_csv(SHEET_CSV_URL, header=None)
+        df_full = pd.read_csv(fetch_url, header=None)
         sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
         inv = pd.to_numeric(str(df_full.iloc[47, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
         sav_val = float(sav) if pd.notnull(sav) else 1287.0
@@ -119,7 +120,10 @@ def load_live_sheet_data():
     except Exception:
         return pd.DataFrame(), 1287.0, 127.33, 1414.33
 
-live_chart_data, sheet_savings, sheet_investments, sheet_total_reserves = load_live_sheet_data()
+if "cache_buster" not in st.session_state:
+    st.session_state.cache_buster = 0
+
+live_chart_data, sheet_savings, sheet_investments, sheet_total_reserves = load_live_sheet_data(st.session_state.cache_buster)
 
 # --- Session State ---
 if "current_step" not in st.session_state:
