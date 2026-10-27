@@ -41,6 +41,31 @@ def load_history():
             return pd.DataFrame()
     return pd.DataFrame()
 
+# --- Live Google Sheet Connection ---
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpkmYNnZU1yZr__I9f0UwDbJxG7Hr68Kt7X4IfzO1FYRT4LjcxIVtI68ewN6E0sQfx711PSk8fJVlB/pub?gid=184144388&single=true&output=csv"
+
+@st.cache_data(ttl=300)
+def load_live_sheet_data():
+    try:
+        df_hist = pd.read_csv(SHEET_CSV_URL, header=None, usecols=[0, 1])
+        df_hist.columns = ["Date_Raw", "Bal_Raw"]
+        df_hist["Date"] = pd.to_datetime(df_hist["Date_Raw"], format="%d/%m/%Y", errors="coerce")
+        clean_bal = df_hist["Bal_Raw"].astype(str).str.replace(",", "", regex=False).str.replace("£", "", regex=False).str.strip()
+        df_hist["Balance"] = pd.to_numeric(clean_bal, errors="coerce")
+        df_hist = df_hist.dropna(subset=["Date", "Balance"]).sort_values("Date")
+        df_hist["Debt Remaining (£)"] = df_hist["Balance"].apply(lambda x: abs(x) if x < 0 else 0)
+        df_hist["Stored Cash (£)"] = df_hist["Balance"].apply(lambda x: x if x > 0 else 0)
+        chart_df = df_hist.set_index("Date")[["Debt Remaining (£)", "Stored Cash (£)"]]
+
+        df_full = pd.read_csv(SHEET_CSV_URL, header=None)
+        sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
+        inv = pd.to_numeric(str(df_full.iloc[47, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
+        return chart_df, float(sav) if pd.notnull(sav) else 1287.0, float(inv) if pd.notnull(inv) else 127.33
+    except Exception:
+        return pd.DataFrame(), 1287.0, 127.33
+
+live_chart_data, sheet_savings, sheet_investments = load_live_sheet_data()
+
 # --- Session State ---
 if "current_step" not in st.session_state:
     st.session_state.current_step = 1
@@ -311,13 +336,10 @@ elif st.session_state.current_step == 3:
     st.subheader("📈 4-Year Debt-to-0 & Wealth Curve")
     st.caption("Structural journey from historical debt into positive reserves.")
 
-    wealth_data = pd.DataFrame({
-        "Period": ["2023 H1", "2023 H2", "2024 H1", "2024 H2", "2025 H1", "2025 H2", "2026 H1", "Present"],
-        "Debt Remaining": [8200, 6800, 5400, 3900, 2400, 1100, 450, 0],
-        "Liquid Reserves": [800, 1100, 1400, 1900, 2400, 2900, 3200, savings_adj]
-    }).set_index("Period")
-
-    st.line_chart(wealth_data)
+    if not live_chart_data.empty:
+        st.line_chart(live_chart_data)
+    else:
+        st.info("Fetching live spreadsheet curve...")
 
     st.divider()
 
