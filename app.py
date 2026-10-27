@@ -33,10 +33,11 @@ st.markdown("""
         color: #38bdf8;
         padding: 8px 18px;
         border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
+        font-size: 0.9rem;
+        font-weight: 700;
         margin-bottom: 12px;
         border: 1px solid #334155;
+        letter-spacing: 0.04em;
     }
     div.stButton > button {
         border-radius: 12px;
@@ -88,7 +89,6 @@ if st.session_state.current_step == 1:
     st.title("🛡️ LifeShield")
     st.caption("Daily Biometrics & Adaptive Health Pulse")
 
-    # Real-Life Sky & Clouds Component with Seamless Drift Animation
     real_sky_face_html = """
     <div style="position: relative; overflow: hidden; border-radius: 24px; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 16px 35px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center;">
         
@@ -243,9 +243,8 @@ if st.session_state.current_step == 1:
 
     st.divider()
 
-    # --- Evidence-Based Behavioral Signals (Left = Negative, Right = Positive) ---
+    # Behavioral Signals (Left = Low / Fatigued, Right = High / Optimal)
     st.subheader("🧠 Behavioral & Focus Signals")
-    st.caption("Standardized: Left is negative/fatigued, Right is positive/optimal.")
 
     b_col1, b_col2 = st.columns(2)
     with b_col1:
@@ -299,11 +298,9 @@ if st.session_state.current_step == 1:
             }[x]
         )
 
-    # --- Vitality Calculation ---
+    # Dynamic Vitality Calculation
     sleep_debt = max(0.0, 7.5 - sleep_input)
     hr_penalty = max(0, (hr_input - 75) * 0.4) if hr_input > 75 else 0
-
-    # Positive sum (scale 4 to 20): centered around baseline 12
     behavioral_bonus = (cognitive_clarity + physical_ease + social_patience + financial_calm) - 12
 
     calculated_vitality = int(max(5, min(100, 
@@ -314,14 +311,13 @@ if st.session_state.current_step == 1:
         - hr_penalty
     )))
 
-    # --- Historical Adaptive Correlation Engine ---
+    # Historical Adaptive Correlation
     history_df = load_history()
     rolling_vitality_avg = calculated_vitality
     if not history_df.empty and "Vitality" in history_df.columns:
         last_7_days = history_df.tail(7)["Vitality"].tolist()
         rolling_vitality_avg = sum(last_7_days) / len(last_7_days)
 
-    # Dynamic status classification based on current score & 7-day average
     if calculated_vitality >= 75 and rolling_vitality_avg >= 70:
         burnout_status = "Optimal Vitality (Strong, consistent physiological buffer)"
         status_color = "#10b981"
@@ -332,7 +328,6 @@ if st.session_state.current_step == 1:
         burnout_status = "Managing Baseline (Steady, but monitor weekly recovery)"
         status_color = "#f59e0b"
 
-    # Save to session state
     st.session_state.daily_data.update({
         "heart_rate": hr_input,
         "sleep": sleep_input,
@@ -346,13 +341,11 @@ if st.session_state.current_step == 1:
         "burnout_status": burnout_status
     })
 
-    # Summary Display
     st.markdown(f"""
     <div style="background-color: #131b2e; border-left: 6px solid {status_color}; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">
         <div style="font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Calculated Biological Vitality</div>
         <div style="font-size: 2.2rem; font-weight: 800; color: {status_color};">{calculated_vitality} / 100</div>
         <div style="font-size: 0.88rem; color: {status_color}; font-weight: 600; margin-top: 4px;">{burnout_status}</div>
-        <div style="font-size: 0.78rem; color: #8b949e; margin-top: 4px;">7-Day Rolling Vitality Average: <b>{round(rolling_vitality_avg, 1)}</b></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -361,9 +354,12 @@ if st.session_state.current_step == 1:
         st.rerun()
 
 # ==============================================================================
-# SCREEN 2: BUBBLE STATUS CARDS (VITALITY & FINANCIAL HEALTH OUT OF 100)
+# SCREEN 2: BUBBLE STATUS CARDS (CLEAN TITLES & AUTO SCROLL TO TOP)
 # ==============================================================================
 elif st.session_state.current_step == 2:
+    # Auto-scroll browser window to top on page render
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
+
     st.title("🛡️ LifeShield State")
     st.caption("Step 2 of 3: Daily Summary Cards")
 
@@ -372,18 +368,17 @@ elif st.session_state.current_step == 2:
     weekly_burn = st.session_state.daily_data["weekly_burn"]
     runway_weeks = round(savings / weekly_burn, 1)
 
-    # Financial Health Score out of 100 (12+ weeks of runway = 100 pts)
+    # 12+ weeks of runway = 100 pts
     financial_health_score = int(min(100, max(10, (runway_weeks / 12.0) * 100)))
     st.session_state.daily_data["financial_score"] = financial_health_score
 
-    # Bubble 1: Biological Vitality State
+    # Bubble 1: Biological Vitality (Single Blue Pill Badge, No Duplicate Title)
     v_color = "#10b981" if vitality >= 75 else ("#f59e0b" if vitality >= 50 else "#ef4444")
     
     st.markdown(f"""
     <div class="bubble-card" style="border-color: {v_color};">
-        <div class="swipe-pill">BUBBLE 1: BIOLOGICAL STATE</div>
-        <div style="font-size: 1.1rem; font-weight: 600; color: #94a3b8;">Biological Vitality Index</div>
-        <div style="font-size: 3.6rem; font-weight: 800; color: {v_color}; margin: 8px 0;">{vitality}<span style="font-size: 1.5rem; color: #94a3b8;">/100</span></div>
+        <div class="swipe-pill" style="color: #38bdf8; border-color: #0284c7;">BIOLOGICAL VITALITY</div>
+        <div style="font-size: 3.8rem; font-weight: 800; color: {v_color}; margin: 8px 0;">{vitality}<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>
         <div style="color: {v_color}; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">
             {st.session_state.daily_data['burnout_status']}
         </div>
@@ -393,15 +388,14 @@ elif st.session_state.current_step == 2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Bubble 2: Financial Health State
+    # Bubble 2: Financial Health (Single Green Pill Badge, No Duplicate Title)
     f_color = "#10b981" if financial_health_score >= 70 else ("#f59e0b" if financial_health_score >= 45 else "#ef4444")
     f_badge = "SHIELDED RUNWAY" if financial_health_score >= 70 else ("MODERATE BUFFER" if financial_health_score >= 45 else "VULNERABLE RUNWAY")
 
     st.markdown(f"""
     <div class="bubble-card" style="border-color: {f_color};">
-        <div class="swipe-pill" style="color: #4ade80; border-color: #166534;">BUBBLE 2: ECONOMIC HEALTH</div>
-        <div style="font-size: 1.1rem; font-weight: 600; color: #94a3b8;">Current Financial Health</div>
-        <div style="font-size: 3.6rem; font-weight: 800; color: {f_color}; margin: 8px 0;">{financial_health_score}<span style="font-size: 1.5rem; color: #94a3b8;">/100</span></div>
+        <div class="swipe-pill" style="color: #4ade80; border-color: #166534;">FINANCIAL HEALTH</div>
+        <div style="font-size: 3.8rem; font-weight: 800; color: {f_color}; margin: 8px 0;">{financial_health_score}<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>
         <div style="background-color: {f_color}22; color: {f_color}; display: inline-block; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 0.9rem;">
             {f_badge}
         </div>
@@ -411,7 +405,6 @@ elif st.session_state.current_step == 2:
     </div>
     """, unsafe_allow_html=True)
 
-    # Coupled Stress Warning
     if vitality < 55 and runway_weeks < 8:
         st.error("⚠️ COUPLED RISK ALERT: Persistent low vitality alongside a thin financial buffer (< 8 weeks). Physical downtime risks acute financial friction.")
 
@@ -431,6 +424,8 @@ elif st.session_state.current_step == 2:
 # SCREEN 3: INTERACTIVE PLANNER, BLIP SIMULATOR & CSV EXPORT
 # ==============================================================================
 elif st.session_state.current_step == 3:
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
+
     st.title("🛡️ Financial Shield & Planner")
     st.caption("Step 3 of 3: Interactive Budget & Data Management")
 
@@ -467,7 +462,6 @@ elif st.session_state.current_step == 3:
 
     st.divider()
 
-    # Future Blip Simulator
     st.subheader("⚡ Future Blip Simulator")
     st.caption("Test how unforeseen emergencies or rest periods affect your shield.")
 
@@ -484,82 +478,4 @@ elif st.session_state.current_step == 3:
     <div style="background-color: #131b2e; border: 1px solid #233554; border-radius: 16px; padding: 18px; margin-top: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="color: #94a3b8;">Standard Safe Runway:</span>
-            <span style="font-weight: 700; color: #38bdf8;">{calc_runway} Weeks</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-            <span style="color: #94a3b8;">Post-Blip Protected Runway:</span>
-            <span style="font-weight: 700; color: {'#10b981' if blip_runway >= 8 else '#ef4444'};">{blip_runway} Weeks</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-
-    # Save Check-in Entry to CSV
-    if st.button("💾 Lock Today's Log to History", use_container_width=True, type="primary"):
-        today = datetime.date.today()
-        new_row = pd.DataFrame([{
-            "Date": today,
-            "HeartRate": st.session_state.daily_data["heart_rate"],
-            "Sleep": st.session_state.daily_data["sleep"],
-            "Strain": st.session_state.daily_data["strain"],
-            "CognitiveClarity": st.session_state.daily_data["cognitive_clarity"],
-            "PhysicalEase": st.session_state.daily_data["physical_ease"],
-            "SocialPatience": st.session_state.daily_data["social_patience"],
-            "FinancialCalm": st.session_state.daily_data["financial_calm"],
-            "Vitality": st.session_state.daily_data["vitality"],
-            "FinancialScore": st.session_state.daily_data["financial_score"],
-            "Savings": savings_adj,
-            "RunwayWeeks": calc_runway
-        }])
-
-        if os.path.exists(DATA_FILE):
-            history_df = pd.read_csv(DATA_FILE)
-            history_df["Date"] = pd.to_datetime(history_df["Date"]).dt.date
-            history_df = history_df[history_df["Date"] != today]
-            history_df = pd.concat([history_df, new_row], ignore_index=True)
-        else:
-            history_df = new_row
-
-        history_df.to_csv(DATA_FILE, index=False)
-        st.success(f"Check-in locked for {today}!")
-
-    # --- Historical Trends & Custom CSV Export ---
-    st.divider()
-    st.subheader("📊 History & Data Export")
-
-    history_df = load_history()
-    if not history_df.empty:
-        if len(history_df) > 1:
-            st.line_chart(history_df.set_index("Date")[["Vitality", "FinancialScore", "RunwayWeeks"]])
-
-        # Custom Date Range Selector for CSV Export
-        min_date = history_df["Date"].min()
-        max_date = history_df["Date"].max()
-
-        st.markdown("##### Download Your Collected Data")
-        export_range = st.date_input(
-            "Select Date Range to Export",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date
-        )
-
-        if isinstance(export_range, tuple) and len(export_range) == 2:
-            start_d, end_d = export_range
-            filtered_df = history_df[(history_df["Date"] >= start_d) & (history_df["Date"] <= end_d)]
-            csv_data = filtered_df.to_csv(index=False).encode('utf-8')
-
-            st.download_button(
-                label=f"📥 Download CSV ({start_d} to {end_d})",
-                data=csv_data,
-                file_name=f"lifeshield_data_{start_d}_{end_d}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-    else:
-        st.caption("No history entries recorded yet. Click 'Lock Today's Log' above to start your log.")
-
-    if st.button("← Return to Daily Pulse", use_container_width=True):
-        st.session_state.current_step = 1
-        st.rerun()
+            <span style="font-weight: 700; color
