@@ -142,7 +142,9 @@ if "daily_data" not in st.session_state:
         "vitality": 72,
         "financial_score": 70,
         "savings": float(sheet_total_reserves),
-        "monthly_nut": 1850.0
+        "monthly_nut": 1850.0,
+        "day_type": "Cab / Shift",
+        "notes": ""
     }
 
 if st.session_state.daily_data.get("savings") == 3500:
@@ -323,7 +325,21 @@ if st.session_state.current_step == 1:
     """
     st.markdown(vitality_card_html, unsafe_allow_html=True)
 
-    if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
+    col_type, col_note = st.columns([1, 2])
+    with col_type:
+        st.session_state.daily_data["day_type"] = st.selectbox(
+            "📍 Context / Environment",
+            ["Cab / Shift", "Home / Rest", "Study / Coursework", "Family / Weekend"],
+            index=0
+        )
+    with col_note:
+        st.session_state.daily_data["notes"] = st.text_input(
+            "📝 Context Note",
+            value="",
+            placeholder="e.g. Long run, poor rest on A1, assignment submitted"
+        )
+
+    if st.button("💾 Save Check-in & Review Status ➔", use_container_width=True, type="primary"):
         st.session_state.current_step = 2
         st.rerun()
 
