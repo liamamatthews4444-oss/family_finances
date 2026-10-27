@@ -96,6 +96,7 @@ def load_history():
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpkmYNnZU1yZr__I9f0UwDbJxG7Hr68Kt7X4IfzO1FYRT4LjcxIVtI68ewN6E0sQfx711PSk8fJVlB/pub?gid=184144388&single=true&output=csv"
 
 @st.cache_data(ttl=300)
+@st.cache_data(ttl=30)
 def load_live_sheet_data():
     try:
         df_hist = pd.read_csv(SHEET_CSV_URL, header=None, usecols=[0, 1])
@@ -109,7 +110,7 @@ def load_live_sheet_data():
         chart_df = df_hist.set_index("Date")[["Debt Remaining (£)", "Stored Cash (£)"]]
 
         df_full = pd.read_csv(SHEET_CSV_URL, header=None)
-       sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
+        sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
         inv = pd.to_numeric(str(df_full.iloc[47, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
         sav_val = float(sav) if pd.notnull(sav) else 1287.0
         inv_val = float(inv) if pd.notnull(inv) else 127.33
