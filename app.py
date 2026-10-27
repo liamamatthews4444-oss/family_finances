@@ -235,4 +235,184 @@ if st.session_state.current_step == 1:
     # Live Vitality Display on Screen 1
     v_color = "#10b981" if calculated_vitality >= 70 else ("#f59e0b" if calculated_vitality >= 45 else "#ef4444")
     st.markdown(f"""
-    <div style="background-color: #161b22; border-left: 6px solid {v_color}; border-radius: 12px; padding: 16px; margin:
+    <div style="background-color: #161b22; border-left: 6px solid {v_color}; border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center;">
+        <div style="font-size: 0.85rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em;">Calculated Biological Vitality</div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: {v_color};">{calculated_vitality} / 100</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Save and Move to Next Screen
+    if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
+        st.session_state.current_step = 2
+        st.rerun()
+
+# ==============================================================================
+# SCREEN 2: BUBBLE STATUS CARDS (VITALITY & FINANCIAL HEALTH OUT OF 100)
+# ==============================================================================
+elif st.session_state.current_step == 2:
+    st.title("🛡️ LifeShield State")
+    st.caption("Step 2 of 3: Daily Summary Cards")
+
+    vitality = st.session_state.daily_data["vitality"]
+    savings = st.session_state.daily_data["savings"]
+    weekly_burn = st.session_state.daily_data["weekly_burn"]
+    runway_weeks = round(savings / weekly_burn, 1)
+
+    # Calculate Financial Health Score out of 100
+    # 12+ weeks of emergency runway = 100 pts baseline
+    financial_health_score = int(min(100, max(10, (runway_weeks / 12.0) * 100)))
+    st.session_state.daily_data["financial_score"] = financial_health_score
+
+    # Bubble 1: Biological Vitality State
+    v_color = "#10b981" if vitality >= 70 else ("#f59e0b" if vitality >= 45 else "#ef4444")
+    v_badge = "OPTIMAL RESERVE" if vitality >= 70 else ("ELEVATED STRAIN" if vitality >= 45 else "BURNOUT WARNING")
+    
+    st.markdown(f"""
+    <div class="bubble-card" style="border-color: {v_color};">
+        <div class="swipe-pill">BUBBLE 1: BIOLOGICAL STATE</div>
+        <div style="font-size: 1.1rem; font-weight: 600; color: #8b949e;">Biological Vitality Index</div>
+        <div style="font-size: 3.6rem; font-weight: 800; color: {v_color}; margin: 8px 0;">{vitality}<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>
+        <div style="background-color: {v_color}22; color: {v_color}; display: inline-block; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 0.9rem;">
+            {v_badge}
+        </div>
+        <div style="margin-top: 14px; color: #c9d1d9; font-size: 0.95rem;">
+            Sleep: <b>{st.session_state.daily_data['sleep']}h</b> | Heart Rate: <b>{st.session_state.daily_data['heart_rate']} BPM</b> | Shift Strain: <b>{st.session_state.daily_data['strain']}/5</b>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Bubble 2: Financial Health State
+    f_color = "#10b981" if financial_health_score >= 70 else ("#f59e0b" if financial_health_score >= 45 else "#ef4444")
+    f_badge = "SHIELDED RUNWAY" if financial_health_score >= 70 else ("MODERATE BUFFER" if financial_health_score >= 45 else "VULNERABLE RUNWAY")
+
+    st.markdown(f"""
+    <div class="bubble-card" style="border-color: {f_color};">
+        <div class="swipe-pill" style="color: #56d364;">BUBBLE 2: ECONOMIC HEALTH</div>
+        <div style="font-size: 1.1rem; font-weight: 600; color: #8b949e;">Current Financial Health</div>
+        <div style="font-size: 3.6rem; font-weight: 800; color: {f_color}; margin: 8px 0;">{financial_health_score}<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>
+        <div style="background-color: {f_color}22; color: {f_color}; display: inline-block; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 0.9rem;">
+            {f_badge}
+        </div>
+        <div style="margin-top: 14px; color: #c9d1d9; font-size: 0.95rem;">
+            Liquid Buffer: <b>£{savings:,}</b> | Safe Runway: <b>{runway_weeks} Weeks</b>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Swipe / Next Transition Buttons
+    st.write("")
+    col_back, col_next = st.columns([1, 2])
+    with col_back:
+        if st.button("← Back", use_container_width=True):
+            st.session_state.current_step = 1
+            st.rerun()
+    with col_next:
+        if st.button("👉 Swipe to Interactive Planner →", use_container_width=True, type="primary"):
+            st.session_state.current_step = 3
+            st.rerun()
+
+# ==============================================================================
+# SCREEN 3: INTERACTIVE SAVINGS, INCOME & FUTURE BLIP SIMULATOR
+# ==============================================================================
+elif st.session_state.current_step == 3:
+    st.title("🛡️ Financial Shield & Planner")
+    st.caption("Step 3 of 3: Interactive Budget & Future Blip Testing")
+
+    st.subheader("Household Economic Controls")
+    col_sav, col_burn = st.columns(2)
+    with col_sav:
+        savings_adj = st.number_input(
+            "Liquid Emergency Buffer (£)", 
+            min_value=0, 
+            value=int(st.session_state.daily_data["savings"]), 
+            step=250
+        )
+    with col_burn:
+        burn_adj = st.number_input(
+            "Weekly Baseline Burn (£)", 
+            min_value=100, 
+            value=int(st.session_state.daily_data["weekly_burn"]), 
+            step=25,
+            help="Fixed basics: rent/mortgage, council tax, food essentials, core bills"
+        )
+
+    income_adj = st.number_input(
+        "Estimated Monthly Net Household Income (£)",
+        min_value=0,
+        value=int(st.session_state.daily_data["monthly_income"]),
+        step=100
+    )
+
+    st.session_state.daily_data["savings"] = savings_adj
+    st.session_state.daily_data["weekly_burn"] = burn_adj
+    st.session_state.daily_data["monthly_income"] = income_adj
+
+    calc_runway = round(savings_adj / burn_adj, 1)
+
+    st.divider()
+
+    # Futuristic Blip Stress-Testing
+    st.subheader("⚡ Future Blip Simulator")
+    st.caption("Simulate realistic disruptions to see if your economic shield holds.")
+
+    blip_col1, blip_col2 = st.columns(2)
+    with blip_col1:
+        vehicle_blip = st.slider("Emergency Repair / Bill (£)", 0, 2000, 0, 100)
+    with blip_col2:
+        unpaid_rest_weeks = st.slider("Fatigue / Unpaid Recovery (Weeks)", 0, 4, 0, 1)
+
+    # Calculate Impact of Blip
+    blip_savings = max(0, savings_adj - vehicle_blip - (unpaid_rest_weeks * burn_adj))
+    blip_runway = round(blip_savings / burn_adj, 1)
+
+    st.markdown(f"""
+    <div style="background-color: #161b22; border: 1px solid #30363d; border-radius: 16px; padding: 18px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #8b949e;">Normal Safe Runway:</span>
+            <span style="font-weight: 700; color: #58a6ff;">{calc_runway} Weeks</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <span style="color: #8b949e;">Post-Blip Protected Runway:</span>
+            <span style="font-weight: 700; color: {'#10b981' if blip_runway >= 8 else '#ef4444'};">{blip_runway} Weeks</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Save Check-in Entry to CSV File
+    st.divider()
+    DATA_FILE = "lifeshield_history.csv"
+
+    if st.button("💾 Commit Today's Log to Long-Term Trends", use_container_width=True, type="primary"):
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        new_row = pd.DataFrame([{
+            "Date": today,
+            "Mood": st.session_state.daily_data["mood"],
+            "HeartRate": st.session_state.daily_data["heart_rate"],
+            "Sleep": st.session_state.daily_data["sleep"],
+            "Strain": st.session_state.daily_data["strain"],
+            "Vitality": st.session_state.daily_data["vitality"],
+            "FinancialScore": st.session_state.daily_data["financial_score"],
+            "Savings": savings_adj,
+            "RunwayWeeks": calc_runway
+        }])
+
+        if os.path.exists(DATA_FILE):
+            history_df = pd.read_csv(DATA_FILE)
+            history_df = history_df[history_df["Date"] != today]
+            history_df = pd.concat([history_df, new_row], ignore_index=True)
+        else:
+            history_df = new_row
+
+        history_df.to_csv(DATA_FILE, index=False)
+        st.success(f"Check-in successfully locked for {today}!")
+
+    # Display History Graph if available
+    if os.path.exists(DATA_FILE):
+        hist = pd.read_csv(DATA_FILE)
+        if len(hist) > 1:
+            st.subheader("Historical Vitality vs Financial Shield")
+            st.line_chart(hist.set_index("Date")[["Vitality", "FinancialScore", "RunwayWeeks"]])
+
+    if st.button("← Return to Daily Pulse", use_container_width=True):
+        st.session_state.current_step = 1
+        st.rerun()
