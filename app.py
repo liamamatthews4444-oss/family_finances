@@ -23,7 +23,7 @@ st.markdown("""
         font-size: 1.05rem;
     }
     div[data-testid="stMetricValue"] {
-        font-size: 3rem;
+        font-size: 2.8rem;
         font-weight: 800;
     }
 </style>
@@ -68,7 +68,7 @@ if st.session_state.current_step == 1:
     st.title("🛡️ LifeShield")
     st.caption("Daily Biometrics & Adaptive Health Pulse")
 
-    # Robust Face Loader (handles both local and cloud directory structures)
+    # Load Face Component from separate face.html file
     script_dir = os.path.dirname(os.path.abspath(__file__))
     face_path = os.path.join(script_dir, "face.html")
 
@@ -79,7 +79,7 @@ if st.session_state.current_step == 1:
         with open("face.html", "r", encoding="utf-8") as f:
             components.html(f.read(), height=310)
     else:
-        st.warning("⚠️ `face.html` not found. Ensure `face.html` is committed alongside `app.py` in your repository.")
+        st.warning("⚠️ face.html not found. Make sure face.html is uploaded in your repository root.")
 
     col_hr, col_sleep = st.columns(2)
     with col_hr:
@@ -285,4 +285,124 @@ elif st.session_state.current_step == 3:
             min_value=500,
             value=int(st.session_state.daily_data["monthly_nut"]),
             step=50,
-            help="Fixed essentials: housing, council tax
+            help="Fixed essentials: housing, council tax, core food, utilities, fixed debt."
+        )
+
+    st.session_state.daily_data["savings"] = savings_adj
+    st.session_state.daily_data["monthly_nut"] = nut_adj
+
+    weekly_burn = nut_adj / 4.33
+    calc_runway = round(savings_adj / weekly_burn, 1)
+
+    # Runway Display
+    with st.container(border=True):
+        st.caption("AUTOPILOT FAMILY RUNWAY")
+        st.metric("Survival Runway", f"{calc_runway} Weeks")
+        if calc_runway >= 12:
+            st.success("Solid buffer: Over 3 months of survival expenses secured.")
+        elif calc_runway >= 6:
+            st.warning("Moderate buffer: 6 to 12 weeks of survival expenses.")
+        else:
+            st.error("Thin buffer: Under 6 weeks of essential living costs.")
+
+    st.divider()
+
+    # 4-Year Debt-to-0 & Wealth Trajectory Curve
+    st.subheader("📈 4-Year Debt-to-0 & Wealth Curve")
+    st.caption("Structural journey from historical debt into positive reserves.")
+
+    wealth_data = pd.DataFrame({
+        "Period": ["2023 H1", "2023 H2", "2024 H1", "2024 H2", "2025 H1", "2025 H2", "2026 H1", "Present"],
+        "Debt Remaining": [8200, 6800, 5400, 3900, 2400, 1100, 450, 0],
+        "Liquid Reserves": [800, 1100, 1400, 1900, 2400, 2900, 3200, savings_adj]
+    }).set_index("Period")
+
+    st.line_chart(wealth_data)
+
+    st.divider()
+
+    # Reality Blip Stress-Test
+    st.subheader("⚡ Reality 'Blip' Stress-Test")
+    st.caption("Test how unforeseen friction affects your runway.")
+
+    blip_col1, blip_col2 = st.columns(2)
+    with blip_col1:
+        vehicle_blip = st.slider("Emergency Repair (£)", 0, 2000, 0, 100)
+    with blip_col2:
+        unpaid_rest_weeks = st.slider("Unpaid Leave (Weeks)", 0, 4, 0, 1)
+
+    blip_savings = max(0, savings_adj - vehicle_blip - (unpaid_rest_weeks * weekly_burn))
+    blip_runway = round(blip_savings / weekly_burn, 1)
+
+    with st.container(border=True):
+        r1, r2 = st.columns(2)
+        with r1:
+            st.metric("Standard Runway", f"{calc_runway} Wks")
+        with r2:
+            st.metric("Post-Blip Runway", f"{blip_runway} Wks")
+
+    st.divider()
+
+    if st.button("💾 Lock Today's Log", use_container_width=True, type="primary"):
+        today = datetime.date.today().strftime("%Y-%m-%d")
+        new_row = pd.DataFrame([{
+            "Date": today,
+            "HeartRate": int(st.session_state.daily_data["heart_rate"]),
+            "Sleep": float(st.session_state.daily_data["sleep"]),
+            "Strain": int(st.session_state.daily_data["strain"]),
+            "CognitiveClarity": int(st.session_state.daily_data["cognitive_clarity"]),
+            "PhysicalEase": int(st.session_state.daily_data["physical_ease"]),
+            "SocialPatience": int(st.session_state.daily_data["social_patience"]),
+            "FinancialCalm": int(st.session_state.daily_data["financial_calm"]),
+            "Vitality": int(st.session_state.daily_data["vitality"]),
+            "FinancialScore": int(st.session_state.daily_data["financial_score"]),
+            "RunwayWeeks": float(calc_runway)
+        }])
+
+        if os.path.exists(DATA_FILE):
+            history_df = pd.read_csv(DATA_FILE)
+            history_df["Date"] = history_df["Date"].astype(str)
+            history_df = history_df[history_df["Date"] != today]
+            history_df = pd.concat([history_df, new_row], ignore_index=True)
+        else:
+            history_df = new_row
+
+        history_df.to_csv(DATA_FILE, index=False)
+        st.success(f"Check-in locked for {today}!")
+
+    st.divider()
+    st.subheader("📊 History & Data Export")
+
+    history_df = load_history()
+    if not history_df.empty:
+        if len(history_df) > 1:
+            st.line_chart(history_df.set_index("Date")[["Vitality", "FinancialScore", "RunwayWeeks"]])
+
+        min_date = history_df["Date"].min()
+        max_date = history_df["Date"].max()
+
+        export_range = st.date_input(
+            "Select Date Range to Export",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date
+        )
+
+        if isinstance(export_range, tuple) and len(export_range) == 2:
+            start_d, end_d = export_range
+            filtered_df = history_df[(history_df["Date"] >= start_d) & (history_df["Date"] <= end_d)]
+            csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+
+            st.download_button(
+                label=f"📥 Download CSV ({start_d} to {end_d})",
+                data=csv_data,
+                file_name=f"lifeshield_data_{start_d}_{end_d}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+    else:
+        st.caption("No history entries recorded yet.")
+
+    if st.button("← Return to Daily Pulse", use_container_width=True):
+        st.session_state.current_step = 1
+        st.rerun()
