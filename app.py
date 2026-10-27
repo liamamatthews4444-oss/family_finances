@@ -429,8 +429,15 @@ elif st.session_state.current_step == 3:
     st.divider()
 
     # 4-Year Debt-to-0 & Wealth Trajectory Curve
-    st.subheader("📈 4-Year Debt-to-0 & Wealth Curve")
-    st.caption("Structural journey from historical debt into positive reserves.")
+    col_hdr, col_btn = st.columns([3, 1])
+    with col_hdr:
+        st.subheader("📈 Live Multi-Year Net Trajectory")
+        st.caption("Directly connected to 'cc and l tracker' (Columns A & B)")
+    with col_btn:
+        if st.button("🔄 Refresh"):
+            load_live_sheet_data.clear()
+            st.session_state.cache_buster += 1
+            st.rerun()
 
     if not live_chart_data.empty:
         st.line_chart(live_chart_data)
