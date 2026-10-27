@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  @keyframes drift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
+  .sky-card {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 20px;
+    padding: 24px 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.5);
+    background: linear-gradient(rgba(11,15,25,0.3), rgba(11,15,25,0.7)),
+                url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1000&q=80');
+    background-size: 200% 200%;
+    animation: drift 70s ease-in-out infinite;
+  }
+  .face-svg {
+    animation: float 4s ease-in-out infinite;
+    filter: drop-shadow(0 10px 16px rgba(0,0,0,0.6));
+    transition: all 0.25s ease;
+  }
+  .slider-bar {
+    -webkit-appearance: none;
+    width: 84%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, #ef4444, #f97316, #f59e0b, #84cc16, #10b981);
+    outline: none;
+    margin-top: 18px;
+  }
+  .slider-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(0,0,0,0.7);
+    border: 2px solid #0f172a;
+  }
+  .title-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    margin-bottom: 14px;
+  }
+  .mood-label {
+    margin-top: 12px;
+    font-weight: 800;
+    color: #f59e0b;
+    font-size: 1.1rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+</style>
+</head>
+<body>
+
+<div class="sky-card">
+  <div class="title-text">How are you feeling right now?</div>
+
+  <svg id="moodFace" class="face-svg" width="120" height="120" viewBox="0 0 100 100">
+    <circle id="faceBg" cx="50" cy="50" r="45" fill="#f59e0b" stroke="#d97706" stroke-width="3.5"/>
+    <circle cx="35" cy="40" r="4.5" fill="#0f172a"/>
+    <circle cx="65" cy="40" r="4.5" fill="#0f172a"/>
+    <path id="leftBrow" d="M 28 32 Q 35 32 42 32" stroke="#0f172a" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path id="rightBrow" d="M 58 32 Q 65 32 72 32" stroke="#0f172a" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path id="mouth" d="M 34 68 Q 50 68 66 68" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </svg>
+
+  <div id="moodTitle" class="mood-label">Managing baseline</div>
+  <input type="range" min="1" max="5" value="3" class="slider-bar" id="moodRange" oninput="slideFace(this.value)">
+</div>
+
+<script>
+function slideFace(val) {
+  const face = document.getElementById("faceBg");
+  const mouth = document.getElementById("mouth");
+  const leftBrow = document.getElementById("leftBrow");
+  const rightBrow = document.getElementById("rightBrow");
+  const title = document.getElementById("moodTitle");
+
+  if (val == 1) {
+    face.setAttribute("fill", "#ef4444"); face.setAttribute("stroke", "#b91c1c");
+    mouth.setAttribute("d", "M 32 74 Q 50 54 68 74");
+    leftBrow.setAttribute("d", "M 28 36 Q 35 30 42 35"); rightBrow.setAttribute("d", "M 58 35 Q 65 30 72 36");
+    title.innerText = "Burnout"; title.style.color = "#ef4444";
+  } else if (val == 2) {
+    face.setAttribute("fill", "#f97316"); face.setAttribute("stroke", "#c2410c");
+    mouth.setAttribute("d", "M 34 71 Q 50 62 66 71");
+    leftBrow.setAttribute("d", "M 28 34 Q 35 31 42 34"); rightBrow.setAttribute("d", "M 58 34 Q 65 31 72 34");
+    title.innerText = "Strained"; title.style.color = "#f97316";
+  } else if (val == 3) {
+    face.setAttribute("fill", "#f59e0b"); face.setAttribute("stroke", "#b45309");
+    mouth.setAttribute("d", "M 34 68 Q 50 68 66 68");
+    leftBrow.setAttribute("d", "M 28 32 Q 35 32 42 32"); rightBrow.setAttribute("d", "M 58 32 Q 65 32 72 32");
+    title.innerText = "Managing baseline"; title.style.color = "#f59e0b";
+  } else if (val == 4) {
+    face.setAttribute("fill", "#84cc16"); face.setAttribute("stroke", "#4d7c0f");
+    mouth.setAttribute("d", "M 32 64 Q 50 73 68 64");
+    leftBrow.setAttribute("d", "M 28 30 Q 35 29 42 32"); rightBrow.setAttribute("d", "M 58 32 Q 65 29 72 30");
+    title.innerText = "Resilient"; title.style.color = "#84cc16";
+  } else {
+    face.setAttribute("fill", "#10b981"); face.setAttribute("stroke", "#047857");
+    mouth.setAttribute("d", "M 30 62 Q 50 80 70 62");
+    leftBrow.setAttribute("d", "M 28 28 Q 35 26 42 30"); rightBrow.setAttribute("d", "M 58 30 Q 65 26 72 28");
+    title.innerText = "Energised"; title.style.color = "#10b981";
+  }
+}
+</script>
+
+</body>
+</html>
