@@ -275,3 +275,54 @@ if st.session_state.current_step == 1:
         status_color = "#f59e0b"
 
     st.session_state.daily_data.update({
+        "heart_rate": hr_input,
+        "sleep": sleep_input,
+        "strain": strain_input,
+        "cognitive_clarity": cognitive_clarity,
+        "physical_ease": physical_ease,
+        "social_patience": social_patience,
+        "financial_calm": financial_calm,
+        "vitality": calculated_vitality,
+        "rolling_vitality_avg": round(rolling_vitality_avg, 1),
+        "burnout_status": burnout_status
+    })
+
+    card_html = (
+        '<div style="background-color: #131b2e; border-left: 6px solid ' + status_color + '; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">'
+        '<div style="font-size: 0.85rem; color: #94a3b8; text-transform: uppercase;">Calculated Biological Vitality</div>'
+        '<div style="font-size: 2.2rem; font-weight: 800; color: ' + status_color + ';">' + str(calculated_vitality) + ' / 100</div>'
+        '<div style="font-size: 0.88rem; color: ' + status_color + '; font-weight: 600; margin-top: 4px;">' + burnout_status + '</div>'
+        '</div>'
+    )
+    st.markdown(card_html, unsafe_allow_html=True)
+
+    if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
+        st.session_state.current_step = 2
+        st.rerun()
+
+# ==============================================================================
+# SCREEN 2: BUBBLE STATUS CARDS
+# ==============================================================================
+elif st.session_state.current_step == 2:
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
+
+    st.title("🛡️ LifeShield State")
+    st.caption("Step 2 of 3: Daily Summary Cards")
+
+    vitality = st.session_state.daily_data["vitality"]
+    savings = st.session_state.daily_data["savings"]
+    weekly_burn = st.session_state.daily_data["weekly_burn"]
+    runway_weeks = round(savings / weekly_burn, 1)
+
+    financial_health_score = int(min(100, max(10, (runway_weeks / 12.0) * 100)))
+    st.session_state.daily_data["financial_score"] = financial_health_score
+
+    v_color = "#10b981" if vitality >= 75 else ("#f59e0b" if vitality >= 50 else "#ef4444")
+    f_color = "#10b981" if financial_health_score >= 70 else ("#f59e0b" if financial_health_score >= 45 else "#ef4444")
+    f_badge = "SHIELDED RUNWAY" if financial_health_score >= 70 else ("MODERATE BUFFER" if financial_health_score >= 45 else "VULNERABLE RUNWAY")
+
+    b1_html = (
+        '<div class="bubble-card" style="border-color: ' + v_color + ';">'
+        '<div class="swipe-pill" style="color: #38bdf8; border-color: #0284c7;">BIOLOGICAL VITALITY</div>'
+        '<div style="font-size: 3.8rem; font-weight: 800; color: ' + v_color + '; margin: 8px 0;">' + str(vitality) + '<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>'
+        '<div style="color: ' + v_color + '; font-weight: 700; font-size: 0.95rem;
