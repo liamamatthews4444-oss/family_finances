@@ -53,12 +53,16 @@ if "current_step" not in st.session_state:
 
 if "daily_data" not in st.session_state:
     st.session_state.daily_data = {
-        "present_mood": 3,
-        "life_outlook": 3,
+        "mood": 3,
         "heart_rate": 68,
         "sleep": 7.0,
         "strain": 3,
+        "cognitive_clarity": 3,
+        "physical_tension": 2,
+        "social_battery": 3,
+        "financial_anxiety": 2,
         "vitality": 72,
+        "predictive_burnout_risk": "Low",
         "financial_score": 70,
         "savings": 3500,
         "weekly_burn": 450,
@@ -66,63 +70,63 @@ if "daily_data" not in st.session_state:
     }
 
 # ==============================================================================
-# SCREEN 1: DAILY PULSE, CLOUD SKY FACE & PREDICTIVE METRICS
+# SCREEN 1: REAL-SKY MOOD FACE & BEHAVIORAL PREDICTIVE ENGINE
 # ==============================================================================
 if st.session_state.current_step == 1:
     st.title("🛡️ LifeShield")
-    st.caption("Daily Biometrics & Trajectory Pulse")
+    st.caption("Daily Biometrics & Behavioral Shield")
 
-    # Translucent Sky & Moving Cloud Container with Reactive Face
-    sky_face_html = """
-    <div style="position: relative; overflow: hidden; border-radius: 24px; border: 1px solid rgba(56, 189, 248, 0.25); background: linear-gradient(180deg, #0284c7 0%, #0369a1 40%, #0f172a 100%); padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);">
+    # Real-Life Sky & Clouds Component with Seamless Drift Animation
+    real_sky_face_html = """
+    <div style="position: relative; overflow: hidden; border-radius: 24px; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 16px 35px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center;">
         
+        <!-- Photographic Real-Life Moving Sky Background -->
         <style>
-            /* Drifting Cloud Animations */
-            @keyframes driftSlow {
-                0% { transform: translateX(-120px); opacity: 0.35; }
-                50% { opacity: 0.65; }
-                100% { transform: translateX(450px); opacity: 0.35; }
+            @keyframes panClouds {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
             }
-            @keyframes driftFast {
-                0% { transform: translateX(-80px); opacity: 0.25; }
-                50% { opacity: 0.55; }
-                100% { transform: translateX(420px); opacity: 0.25; }
-            }
-            @keyframes subtleBreathe {
-                0% { transform: translateY(0px) scale(1); }
-                50% { transform: translateY(-5px) scale(1.02); }
-                100% { transform: translateY(0px) scale(1); }
-            }
-            .cloud-bg-1 {
+            .sky-background {
                 position: absolute;
-                top: 15px;
+                top: 0;
                 left: 0;
-                animation: driftSlow 34s linear infinite;
-                pointer-events: none;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(rgba(11, 15, 25, 0.25), rgba(11, 15, 25, 0.65)),
+                            url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=1200&q=80');
+                background-size: 200% 200%;
+                animation: panClouds 75s ease-in-out infinite;
+                z-index: 1;
             }
-            .cloud-bg-2 {
-                position: absolute;
-                top: 75px;
-                left: 0;
-                animation: driftFast 22s linear infinite;
-                pointer-events: none;
+            @keyframes subtleFloat {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-6px); }
+                100% { transform: translateY(0px); }
+            }
+            .face-wrapper {
+                position: relative;
+                z-index: 2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
             }
             .interactive-face {
-                animation: subtleBreathe 3.5s ease-in-out infinite;
-                filter: drop-shadow(0px 10px 18px rgba(0,0,0,0.5));
+                animation: subtleFloat 4s ease-in-out infinite;
+                filter: drop-shadow(0px 12px 20px rgba(0,0,0,0.6));
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .slider-range {
+            .clean-slider {
                 -webkit-appearance: none;
-                width: 92%;
-                height: 10px;
-                border-radius: 6px;
+                width: 82%;
+                height: 8px;
+                border-radius: 4px;
                 background: linear-gradient(to right, #ef4444, #f97316, #f59e0b, #84cc16, #10b981);
                 outline: none;
-                margin-top: 18px;
-                margin-bottom: 6px;
+                margin-top: 24px;
             }
-            .slider-range::-webkit-slider-thumb {
+            .clean-slider::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
                 width: 26px;
@@ -130,25 +134,18 @@ if st.session_state.current_step == 1:
                 border-radius: 50%;
                 background: #ffffff;
                 cursor: pointer;
-                box-shadow: 0 0 12px rgba(0,0,0,0.6);
-                border: 2px solid #0369a1;
+                box-shadow: 0 0 14px rgba(0,0,0,0.7);
+                border: 2px solid #0f172a;
             }
         </style>
 
-        <!-- Background Clouds -->
-        <svg class="cloud-bg-1" width="160" height="60" viewBox="0 0 100 45" fill="#ffffff">
-            <path d="M 20 35 A 15 15 0 0 1 35 15 A 20 20 0 0 1 70 18 A 15 15 0 0 1 85 35 Z"/>
-        </svg>
-        <svg class="cloud-bg-2" width="120" height="45" viewBox="0 0 100 45" fill="#e0f2fe">
-            <path d="M 20 35 A 12 12 0 0 1 32 18 A 18 18 0 0 1 65 20 A 12 12 0 0 1 80 35 Z"/>
-        </svg>
+        <div class="sky-background"></div>
 
-        <!-- Translucent Frosted Glass Card -->
-        <div style="position: relative; z-index: 2; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.15); padding: 18px 12px; display: flex; flex-direction: column; align-items: center;">
-            <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; margin-bottom: 12px; letter-spacing: -0.01em;">How are you feeling right now?</div>
+        <div class="face-wrapper">
+            <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin-bottom: 18px;">How are you feeling right now?</div>
 
-            <!-- Morphing Reactive SVG Face -->
-            <svg id="moodFace" class="interactive-face" width="125" height="125" viewBox="0 0 100 100">
+            <!-- Dynamic Reactive SVG Face -->
+            <svg id="moodFace" class="interactive-face" width="130" height="130" viewBox="0 0 100 100">
                 <circle id="faceBg" cx="50" cy="50" r="45" fill="#f59e0b" stroke="#d97706" stroke-width="3.5"/>
                 <circle id="leftEye" cx="35" cy="40" r="4.5" fill="#0f172a"/>
                 <circle id="rightEye" cx="65" cy="40" r="4.5" fill="#0f172a"/>
@@ -158,19 +155,10 @@ if st.session_state.current_step == 1:
             </svg>
 
             <!-- State Title -->
-            <div id="moodTitle" style="margin-top: 12px; font-weight: 700; color: #f59e0b; font-size: 1.1rem;">Managing baseline</div>
+            <div id="moodTitle" style="margin-top: 14px; font-weight: 800; color: #f59e0b; font-size: 1.15rem; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">Managing baseline</div>
 
-            <!-- Face Controller Range -->
-            <input type="range" min="1" max="5" value="3" class="slider-range" id="moodRange" oninput="handleSlide(this.value)">
-            
-            <!-- Scale Labels -->
-            <div style="display: flex; justify-content: space-between; width: 92%; font-size: 0.72rem; color: #cbd5e1; font-weight: 600; padding: 0 4px; box-sizing: border-box;">
-                <span style="text-align: left;">Burnout</span>
-                <span style="text-align: center;">Strained</span>
-                <span style="text-align: center;">Managing baseline</span>
-                <span style="text-align: center;">Resilient</span>
-                <span style="text-align: right;">Energised</span>
-            </div>
+            <!-- Clean Slider (Zero text underneath) -->
+            <input type="range" min="1" max="5" value="3" class="clean-slider" id="moodRange" oninput="handleSlide(this.value)">
         </div>
     </div>
 
@@ -185,7 +173,7 @@ if st.session_state.current_step == 1:
         if (val == 1) {
             face.setAttribute("fill", "#ef4444");
             face.setAttribute("stroke", "#b91c1c");
-            mouth.setAttribute("d", "M 32 74 Q 50 54 68 74"); // Deep frown
+            mouth.setAttribute("d", "M 32 74 Q 50 54 68 74");
             leftBrow.setAttribute("d", "M 28 36 Q 35 30 42 35");
             rightBrow.setAttribute("d", "M 58 35 Q 65 30 72 36");
             title.innerText = "Burnout";
@@ -193,7 +181,7 @@ if st.session_state.current_step == 1:
         } else if (val == 2) {
             face.setAttribute("fill", "#f97316");
             face.setAttribute("stroke", "#c2410c");
-            mouth.setAttribute("d", "M 34 71 Q 50 62 66 71"); // Slight frown
+            mouth.setAttribute("d", "M 34 71 Q 50 62 66 71");
             leftBrow.setAttribute("d", "M 28 34 Q 35 31 42 34");
             rightBrow.setAttribute("d", "M 58 34 Q 65 31 72 34");
             title.innerText = "Strained";
@@ -201,7 +189,7 @@ if st.session_state.current_step == 1:
         } else if (val == 3) {
             face.setAttribute("fill", "#f59e0b");
             face.setAttribute("stroke", "#b45309");
-            mouth.setAttribute("d", "M 34 68 Q 50 68 66 68"); // Neutral line
+            mouth.setAttribute("d", "M 34 68 Q 50 68 66 68");
             leftBrow.setAttribute("d", "M 28 32 Q 35 32 42 32");
             rightBrow.setAttribute("d", "M 58 32 Q 65 32 72 32");
             title.innerText = "Managing baseline";
@@ -209,7 +197,7 @@ if st.session_state.current_step == 1:
         } else if (val == 4) {
             face.setAttribute("fill", "#84cc16");
             face.setAttribute("stroke", "#4d7c0f");
-            mouth.setAttribute("d", "M 32 64 Q 50 73 68 64"); // Soft smile
+            mouth.setAttribute("d", "M 32 64 Q 50 73 68 64");
             leftBrow.setAttribute("d", "M 28 30 Q 35 29 42 32");
             rightBrow.setAttribute("d", "M 58 32 Q 65 29 72 30");
             title.innerText = "Resilient";
@@ -217,7 +205,7 @@ if st.session_state.current_step == 1:
         } else {
             face.setAttribute("fill", "#10b981");
             face.setAttribute("stroke", "#047857");
-            mouth.setAttribute("d", "M 30 62 Q 50 80 70 62"); // Big grin
+            mouth.setAttribute("d", "M 30 62 Q 50 80 70 62");
             leftBrow.setAttribute("d", "M 28 28 Q 35 26 42 30");
             rightBrow.setAttribute("d", "M 58 30 Q 65 26 72 28");
             title.innerText = "Energised";
@@ -226,23 +214,10 @@ if st.session_state.current_step == 1:
     }
     </script>
     """
-    components.html(sky_face_html, height=310)
+    components.html(real_sky_face_html, height=310)
 
-    # Metric 1 (Present State Log) & Heart Rate
-    col_feel, col_hr = st.columns([2, 1])
-    with col_feel:
-        present_mood = st.select_slider(
-            "Log Present Feeling",
-            options=[1, 2, 3, 4, 5],
-            value=st.session_state.daily_data["present_mood"],
-            format_func=lambda x: {
-                1: "1 - Burnout", 
-                2: "2 - Strained", 
-                3: "3 - Managing baseline", 
-                4: "4 - Resilient", 
-                5: "5 - Energised"
-            }[x]
-        )
+    # Biometric Row
+    col_hr, col_sleep = st.columns(2)
     with col_hr:
         hr_input = st.number_input(
             "Heart Rate (BPM)",
@@ -252,66 +227,123 @@ if st.session_state.current_step == 1:
             step=1,
             help="Resting morning HR or post-shift reading."
         )
+    with col_sleep:
+        sleep_input = st.slider("Hours Slept", 3.0, 11.0, float(st.session_state.daily_data["sleep"]), 0.5)
 
-    # Metric 2: Predictive Life Outlook / Forward Trajectory (Recognising Patterns)
-    st.markdown("#### 🔭 Forward Trajectory & Momentum")
-    st.caption("How do you feel about the upcoming 7-14 day demands and financial momentum?")
-    outlook_input = st.select_slider(
-        "Life & Financial Outlook",
-        options=[1, 2, 3, 4, 5],
-        value=st.session_state.daily_data["life_outlook"],
-        format_func=lambda x: {
-            1: "1 - High Friction / Overloaded",
-            2: "2 - Heavy Drag / Under Pressure",
-            3: "3 - Balanced Trajectory",
-            4: "4 - Confident / Steady Flow",
-            5: "5 - Gaining Momentum & Expansion"
-        }[x]
-    )
+    strain_input = st.slider("Work / Shift Strain (1-5)", 1, 5, int(st.session_state.daily_data["strain"]),
+                            help="1: Off/Rest, 3: Standard Shift, 5: Heavy Overtime / Heavy Physical Demand")
 
     st.divider()
 
-    # Shift & Physical Strain Inputs
-    st.subheader("Shift & Physical Load")
-    col_sleep, col_strain = st.columns(2)
-    with col_sleep:
-        sleep_input = st.slider("Hours Slept", 3.0, 11.0, float(st.session_state.daily_data["sleep"]), 0.5)
-    with col_strain:
-        strain_input = st.slider("Work / Shift Strain (1-5)", 1, 5, int(st.session_state.daily_data["strain"]),
-                                help="1: Rest Day, 3: Standard Shift, 5: Heavy Overtime / High Physical Demand")
+    # --- 4 Evidence-Based Behavioral Signals (Predicting 14-Day Trajectory) ---
+    st.subheader("🧠 Predictive Behavioral Signals")
+    st.caption("Evidence-based markers from allostatic load models that forecast burnout before it hits.")
 
-    # Dynamic Biological Vitality Calculation
+    b_col1, b_col2 = st.columns(2)
+    with b_col1:
+        cognitive_clarity = st.select_slider(
+            "Focus / Decision Friction",
+            options=[1, 2, 3, 4, 5],
+            value=st.session_state.daily_data["cognitive_clarity"],
+            format_func=lambda x: {
+                1: "1 - Heavy Brain Fog",
+                2: "2 - Sluggish / Distracted",
+                3: "3 - Standard Focus",
+                4: "4 - Sharp & Decisive",
+                5: "5 - Peak Flow"
+            }[x]
+        )
+        physical_tension = st.select_slider(
+            "Body Tension / Heaviness",
+            options=[1, 2, 3, 4, 5],
+            value=st.session_state.daily_data["physical_tension"],
+            format_func=lambda x: {
+                1: "1 - Loose & Relaxed",
+                2: "2 - Normal Baseline",
+                3: "3 - Mild Tightness",
+                4: "4 - Stiff / Sore",
+                5: "5 - Heavy Physical Aches"
+            }[x]
+        )
+    with b_col2:
+        social_battery = st.select_slider(
+            "Social Battery & Patience",
+            options=[1, 2, 3, 4, 5],
+            value=st.session_state.daily_data["social_battery"],
+            format_func=lambda x: {
+                1: "1 - Zero / Short Fuse",
+                2: "2 - Low Patience",
+                3: "3 - Steady / Neutral",
+                4: "4 - Warm & Patient",
+                5: "5 - Highly Connected"
+            }[x]
+        )
+        financial_anxiety = st.select_slider(
+            "Financial Dread / Friction",
+            options=[1, 2, 3, 4, 5],
+            value=st.session_state.daily_data["financial_anxiety"],
+            format_func=lambda x: {
+                1: "1 - Completely Relaxed",
+                2: "2 - Controlled",
+                3: "3 - Background Noise",
+                4: "4 - Noticeable Unease",
+                5: "5 - Acute Financial Dread"
+            }[x]
+        )
+
+    # --- Scientific Composite Vitality & Predictive Risk Formula ---
     sleep_debt = max(0.0, 7.5 - sleep_input)
-    hr_penalty = max(0, (hr_input - 75) * 0.4) if hr_input > 75 else 0
+    hr_penalty = max(0, (hr_input - 75) * 0.45) if hr_input > 75 else 0
+
+    # Behavioral strain penalty based on friction signals
+    behavioral_strain = (
+        (5 - cognitive_clarity) * 2.5 + 
+        physical_tension * 2.0 + 
+        (5 - social_battery) * 2.0 + 
+        financial_anxiety * 2.5
+    )
+
     calculated_vitality = int(max(5, min(100, 
         100 
-        - (sleep_debt * 12) 
-        - (strain_input * 7) 
-        + ((present_mood - 3) * 5) 
-        + ((outlook_input - 3) * 4) 
+        - (sleep_debt * 11) 
+        - (strain_input * 6) 
+        - (behavioral_strain * 0.7) 
         - hr_penalty
     )))
 
+    # Forecast Risk Trajectory
+    if calculated_vitality < 45 or behavioral_strain > 22:
+        burnout_risk = "HIGH (Burnout imminent within 7-10 days if schedule persists)"
+        risk_color = "#ef4444"
+    elif calculated_vitality < 68 or behavioral_strain > 14:
+        burnout_risk = "MODERATE (Fatigue accumulating; schedule recovery recommended)"
+        risk_color = "#f59e0b"
+    else:
+        burnout_risk = "LOW (Physiologically shielded and resilient)"
+        risk_color = "#10b981"
+
     # Save inputs into session
     st.session_state.daily_data.update({
-        "present_mood": present_mood,
-        "life_outlook": outlook_input,
         "heart_rate": hr_input,
         "sleep": sleep_input,
         "strain": strain_input,
-        "vitality": calculated_vitality
+        "cognitive_clarity": cognitive_clarity,
+        "physical_tension": physical_tension,
+        "social_battery": social_battery,
+        "financial_anxiety": financial_anxiety,
+        "vitality": calculated_vitality,
+        "predictive_burnout_risk": burnout_risk
     })
 
-    # Biological Vitality Badge
-    v_color = "#10b981" if calculated_vitality >= 70 else ("#f59e0b" if calculated_vitality >= 45 else "#ef4444")
+    # Summary Badge
     st.markdown(f"""
-    <div style="background-color: #131b2e; border-left: 6px solid {v_color}; border-radius: 14px; padding: 16px; margin: 16px 0; text-align: center;">
+    <div style="background-color: #131b2e; border-left: 6px solid {risk_color}; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">
         <div style="font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Calculated Biological Vitality</div>
-        <div style="font-size: 2.2rem; font-weight: 800; color: {v_color};">{calculated_vitality} / 100</div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: {risk_color};">{calculated_vitality} / 100</div>
+        <div style="font-size: 0.85rem; color: {risk_color}; font-weight: 600; margin-top: 4px;">{burnout_risk}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Save and Move to Screen 2
     if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
         st.session_state.current_step = 2
         st.rerun()
@@ -334,18 +366,17 @@ elif st.session_state.current_step == 2:
 
     # Bubble 1: Biological Vitality State
     v_color = "#10b981" if vitality >= 70 else ("#f59e0b" if vitality >= 45 else "#ef4444")
-    v_badge = "OPTIMAL RESERVE" if vitality >= 70 else ("ELEVATED STRAIN" if vitality >= 45 else "BURNOUT WARNING")
     
     st.markdown(f"""
     <div class="bubble-card" style="border-color: {v_color};">
         <div class="swipe-pill">BUBBLE 1: BIOLOGICAL STATE</div>
         <div style="font-size: 1.1rem; font-weight: 600; color: #94a3b8;">Biological Vitality Index</div>
         <div style="font-size: 3.6rem; font-weight: 800; color: {v_color}; margin: 8px 0;">{vitality}<span style="font-size: 1.5rem; color: #94a3b8;">/100</span></div>
-        <div style="background-color: {v_color}22; color: {v_color}; display: inline-block; padding: 6px 14px; border-radius: 12px; font-weight: 700; font-size: 0.9rem;">
-            {v_badge}
+        <div style="color: {v_color}; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">
+            {st.session_state.daily_data['predictive_burnout_risk']}
         </div>
-        <div style="margin-top: 14px; color: #cbd5e1; font-size: 0.95rem;">
-            Sleep: <b>{st.session_state.daily_data['sleep']}h</b> | Heart Rate: <b>{st.session_state.daily_data['heart_rate']} BPM</b> | Shift Strain: <b>{st.session_state.daily_data['strain']}/5</b>
+        <div style="margin-top: 14px; color: #cbd5e1; font-size: 0.92rem;">
+            Sleep: <b>{st.session_state.daily_data['sleep']}h</b> | HR: <b>{st.session_state.daily_data['heart_rate']} BPM</b> | Shift Load: <b>{st.session_state.daily_data['strain']}/5</b>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -402,7 +433,7 @@ elif st.session_state.current_step == 3:
             min_value=100, 
             value=int(st.session_state.daily_data["weekly_burn"]), 
             step=25,
-            help="Fixed basics: rent/mortgage, council tax, food essentials, core transport"
+            help="Fixed basics: rent/mortgage, council tax, food essentials, core bills"
         )
 
     income_adj = st.number_input(
@@ -455,11 +486,13 @@ elif st.session_state.current_step == 3:
         today = datetime.date.today().strftime("%Y-%m-%d")
         new_row = pd.DataFrame([{
             "Date": today,
-            "PresentMood": st.session_state.daily_data["present_mood"],
-            "LifeOutlook": st.session_state.daily_data["life_outlook"],
             "HeartRate": st.session_state.daily_data["heart_rate"],
             "Sleep": st.session_state.daily_data["sleep"],
             "Strain": st.session_state.daily_data["strain"],
+            "CognitiveClarity": st.session_state.daily_data["cognitive_clarity"],
+            "PhysicalTension": st.session_state.daily_data["physical_tension"],
+            "SocialBattery": st.session_state.daily_data["social_battery"],
+            "FinancialAnxiety": st.session_state.daily_data["financial_anxiety"],
             "Vitality": st.session_state.daily_data["vitality"],
             "FinancialScore": st.session_state.daily_data["financial_score"],
             "Savings": savings_adj,
@@ -476,7 +509,6 @@ elif st.session_state.current_step == 3:
         history_df.to_csv(DATA_FILE, index=False)
         st.success(f"Check-in successfully locked for {today}!")
 
-    # Display History Graph if available
     if os.path.exists(DATA_FILE):
         hist = pd.read_csv(DATA_FILE)
         if len(hist) > 1:
