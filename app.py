@@ -441,6 +441,7 @@ elif st.session_state.current_step == 3:
 
     if not live_chart_data.empty:
         st.line_chart(live_chart_data)
+        st.write("Last 5 rows read by the app:", live_chart_data.tail())
     else:
         st.info("Fetching live spreadsheet curve...")
 
