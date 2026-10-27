@@ -127,9 +127,7 @@ if "current_step" not in st.session_state:
 
 if "daily_data" not in st.session_state:
     st.session_state.daily_data = {
-if st.session_state.daily_data.get("savings") == 3500:
-    st.session_state.daily_data["savings"] = float(sheet_total_reserves)
-    "mood": 3,
+        "mood": 3,
         "heart_rate": 68,
         "sleep": 7.0,
         "strain": 3,
@@ -140,8 +138,11 @@ if st.session_state.daily_data.get("savings") == 3500:
         "vitality": 72,
         "financial_score": 70,
         "savings": float(sheet_total_reserves),
-        "monthly_nut": 1850
+        "monthly_nut": 1850.0
     }
+
+if st.session_state.daily_data.get("savings") == 3500:
+    st.session_state.daily_data["savings"] = float(sheet_total_reserves)
 
 # ==============================================================================
 # SCREEN 1: REAL-SKY MOOD FACE & ADAPTIVE CHECK-IN
