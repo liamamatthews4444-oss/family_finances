@@ -1,339 +1,267 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-import sqlite3
-from datetime import datetime, date
+import datetime
+import os
+import streamlit.components.v1 as components
 
-# ---------------------------------------------------------
-# PAGE CONFIGURATION (Optimized for Mobile)
-# ---------------------------------------------------------
+# --- Page Configuration ---
 st.set_page_config(
-    page_title="Family Wealth & Trajectory",
-    page_icon="📈",
-    layout="wide",
+    page_title="LifeShield: Family & Vitality",
+    page_icon="🛡️",
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Custom Mobile CSS styling
+# Custom Mobile-Friendly Dark Styling
 st.markdown("""
 <style>
-    .metric-box {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
-        padding: 12px 14px;
-        margin-bottom: 10px;
+    .main {
+        background-color: #0e1117;
     }
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        height: 48px;
-        font-weight: 600;
+    .metric-card {
+        background-color: #1a1f29;
+        border: 1px solid #2d3748;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        text-align: center;
     }
-    .badge-paid {
-        background-color: #DCFCE7;
-        color: #166534;
-        padding: 3px 8px;
-        border-radius: 5px;
-        font-size: 12px;
-        font-weight: bold;
+    .stSlider > div {
+        color: #e2e8f0;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# DATABASE SETUP (Local SQLite for quick logging & sinking funds)
-# ---------------------------------------------------------
-DB_FILE = "family_finances.db"
+st.title("🛡️ LifeShield")
+st.caption("Balancing Family Financial Runway & Biological Vitality")
 
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp TEXT,
-            amount REAL,
-            category TEXT,
-            person TEXT,
-            note TEXT
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS sinking_funds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fund_name TEXT UNIQUE,
-            current_balance REAL,
-            target_buffer REAL
-        )
-    """)
-    # Seed default sinking funds if empty
-    default_funds = [
-        ("VW Golf Maintenance", 150.0, 500.0),
-        ("Kia Ceed Servicing", 200.0, 500.0),
-        ("Camper & Holiday", 350.0, 1200.0),
-        ("Home & Garden Emergency", 250.0, 800.0)
-    ]
-    for name, bal, tgt in default_funds:
-        c.execute("INSERT OR IGNORE INTO sinking_funds (fund_name, current_balance, target_buffer) VALUES (?, ?, ?)", (name, bal, tgt))
-    conn.commit()
-    conn.close()
+# --- Interactive Reactive Face & Feeling Scale ---
+st.subheader("Daily Pulse Check-in")
 
-init_db()
-
-def log_expense(amount, category, person, note):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("INSERT INTO transactions (timestamp, amount, category, person, note) VALUES (?, ?, ?, ?, ?)",
-              (datetime.now().strftime("%Y-%m-%d %H:%M"), amount, category, person, note))
-    conn.commit()
-    conn.close()
-
-def get_recent_expenses(limit=10):
-    conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query(f"SELECT timestamp, person, category, amount, note FROM transactions ORDER BY id DESC LIMIT {limit}", conn)
-    conn.close()
-    return df
-
-def get_sinking_funds():
-    conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql_query("SELECT fund_name, current_balance, target_buffer FROM sinking_funds", conn)
-    conn.close()
-    return df
-
-def update_sinking_fund(fund_name, new_bal):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("UPDATE sinking_funds SET current_balance = ? WHERE fund_name = ?", (new_bal, fund_name))
-    conn.commit()
-    conn.close()
-
-# ---------------------------------------------------------
-# NAVIGATION (Mobile Tabs)
-# ---------------------------------------------------------
-tab_quick_log, tab_simulator, tab_sinking, tab_budget = st.tabs([
-    "⚡ Quick Log", 
-    "📈 4-Yr Trajectory", 
-    "🛡️ Sinking Pots", 
-    "📋 Fixed Budget"
-])
-
-# ---------------------------------------------------------
-# TAB 1: QUICK LOG (Fast phone entry for daily cash drag)
-# ---------------------------------------------------------
-with tab_quick_log:
-    st.subheader("⚡ Quick Log Expense")
-    st.caption("Track daily flexible outgoings in under 5 seconds.")
-
-    with st.form("quick_log_form", clear_on_submit=True):
-        col_amt, col_cat = st.columns([1, 1])
-        with col_amt:
-            amount = st.number_input("Amount (£)", min_value=0.01, step=1.00, format="%.2f")
-        with col_cat:
-            category = st.selectbox("Category", [
-                "Groceries / Food Top-up",
-                "Fuel / Commuting",
-                "Vape / Personal",
-                "Kids & School",
-                "Car Maintenance / Spares",
-                "DIY / Hardware",
-                "Eating Out / Takeaway",
-                "Other Discretionary"
-            ])
-        
-        col_who, col_note = st.columns([1, 1])
-        with col_who:
-            person = st.selectbox("Logged By", ["Liam", "Lucy"])
-        with col_note:
-            note = st.text_input("Note (Optional)", placeholder="e.g. Morrisons, wiper blades, school book")
-
-        submit = st.form_submit_button("Record Expense", use_container_width=True)
-        if submit:
-            if amount > 0:
-                log_expense(amount, category, person, note)
-                st.success(f"Logged £{amount:.2f} under {category}!")
-            else:
-                st.error("Please enter a valid amount.")
-
-    st.markdown("---")
-    st.subheader("🕒 Recent Logs")
-    recent_df = get_recent_expenses(8)
-    if not recent_df.empty:
-        for _, row in recent_df.iterrows():
-            st.markdown(
-                f"**£{row['amount']:.2f}** — `{row['category']}` &nbsp;|&nbsp; *{row['person']}* &nbsp;|&nbsp; <small style='color:grey'>{row['timestamp']}</small> {f'— <i>{row["note"]}</i>' if row['note'] else ''}",
-                unsafe_allow_html=True
-            )
-    else:
-        st.info("No discretionary transactions logged yet. Add your first one above!")
-
-# ---------------------------------------------------------
-# TAB 2: 4-YEAR TRAJECTORY SIMULATOR (Dynamic Behavior Sliders)
-# ---------------------------------------------------------
-with tab_simulator:
-    st.subheader("📈 Interactive 4-Year Trajectory")
-    st.caption("Adjust your real-world behavioural levers to see how your net balance compounds through 2030.")
-
-    with st.expander("⚙️ Adjust Behavioural Levers", expanded=True):
-        col_s1, col_s2 = st.columns(2)
-        with col_s1:
-            starting_net = st.number_input("Starting Position (£)", value=-8000.0, step=250.0, format="%.0f")
-            overtime_shifts = st.slider("Extra Shift / Overtime Capacity (£/mo)", 0, 800, 200, step=50,
-                                       help="Additional HGV runs or weekend work")
-            discretionary_spend = st.slider("Discretionary / Spending Drag (£/mo)", 50, 600, 180, step=25,
-                                           help="Target for untracked casual spending (vapes, snacks, tools)")
-        with col_s2:
-            sinking_allowance = st.slider("Annual Sinking Buffer (£/yr)", 0, 2400, 1000, step=100,
-                                         help="Pre-funded buffer to absorb car repairs, camper costs, and holidays smoothly")
-            growth_rate = st.slider("Surplus Cash Yield (% p.a.)", 1.0, 7.0, 4.0, step=0.5,
-                                   help="Interest rate once total balance moves above £0")
-            debt_repayment = st.number_input("Active Debt Payment (£/mo)", value=230.0, step=25.0,
-                                             help="Virgin Money CC (£200) + HMRC (£30)")
-
-    # 48-Month Dynamic Calculation
-    months = 48
-    base_net_income = 1757.00 + 170.20  # £1,927.20
-    fixed_bills = 1151.54               # Rent, council tax, energy, 2 cars, subs
-    family_essentials = 375.45          # Food, school meals, haircuts, uniforms
+# HTML/SVG interactive face with live morphing and subtle animation
+face_html = """
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #161b22; padding: 20px; border-radius: 16px; border: 1px solid #30363d; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+    <style>
+        @keyframes gentleFloat {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(1deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animated-face {
+            animation: gentleFloat 4s ease-in-out infinite;
+            filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.3));
+        }
+    </style>
     
-    # 3 Scenario Simulations:
-    # 1. User Customized (from sliders)
-    # 2. Aggressive Snowball (£450 extra, £80 drag, £1200 buffer)
-    # 3. Status Quo / Drift (£0 extra, £450 drag, £0 buffer)
+    <div style="font-size: 1.15rem; font-weight: 600; color: #f0f6fc; margin-bottom: 12px;">How are you feeling today?</div>
+    
+    <!-- Dynamic SVG Face -->
+    <svg id="moodFace" class="animated-face" width="120" height="120" viewBox="0 0 100 100">
+        <!-- Face Circle -->
+        <circle id="faceBg" cx="50" cy="50" r="45" fill="#f59e0b" stroke="#d97706" stroke-width="3"/>
+        <!-- Eyes -->
+        <circle id="leftEye" cx="35" cy="40" r="4.5" fill="#1e293b"/>
+        <circle id="rightEye" cx="65" cy="40" r="4.5" fill="#1e293b"/>
+        <!-- Eyebrows -->
+        <path id="leftBrow" d="M 28 32 Q 35 32 42 32" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path id="rightBrow" d="M 58 32 Q 65 32 72 32" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <!-- Mouth (Morphs between frown, neutral, and smile) -->
+        <path id="mouth" d="M 32 68 Q 50 68 68 68" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+    </svg>
 
-    def run_projection(extra_inc, disc_spend, annual_shock, starting_bal, yield_pct, debt_pay):
-        balance = starting_bal
-        history = [balance]
-        monthly_shock = annual_shock / 12.0
-        
-        for m in range(1, months + 1):
-            cur_income = base_net_income + extra_inc
-            # Debt phase logic: months 1-18 active, then clears and rolls into surplus
-            cur_debt = debt_pay if m <= 18 else 0.0
-            total_outgoings = fixed_bills + family_essentials + disc_spend + cur_debt + monthly_shock
-            surplus = cur_income - total_outgoings
-            
-            # Compound interest on positive balance
-            interest = (balance * (yield_pct / 100.0 / 12.0)) if balance > 0 else 0.0
-            balance += (surplus + interest)
-            history.append(balance)
-        return history
+    <div id="moodLabel" style="margin-top: 10px; font-weight: 600; color: #f59e0b; font-size: 0.95rem;">Neutral / Managing</div>
+</div>
 
-    proj_custom = run_projection(overtime_shifts, discretionary_spend, sinking_allowance, starting_net, growth_rate, debt_repayment)
-    proj_aggressive = run_projection(450, 80, 1200, starting_net, 4.5, 305)
-    proj_drift = run_projection(0, 450, 0, starting_net, 1.0, 230)
+<script>
+function updateFace(val) {
+    const face = document.getElementById("faceBg");
+    const mouth = document.getElementById("mouth");
+    const leftBrow = document.getElementById("leftBrow");
+    const rightBrow = document.getElementById("rightBrow");
+    const label = document.getElementById("moodLabel");
+    
+    if (val == 1) {
+        face.setAttribute("fill", "#ef4444");
+        face.setAttribute("stroke", "#dc2626");
+        mouth.setAttribute("d", "M 32 72 Q 50 56 68 72"); // Deep frown
+        leftBrow.setAttribute("d", "M 28 35 Q 35 30 42 34");
+        rightBrow.setAttribute("d", "M 58 34 Q 65 30 72 35");
+        label.innerText = "Drained / Burnout Warning";
+        label.style.color = "#ef4444";
+    } else if (val == 2) {
+        face.setAttribute("fill", "#f97316");
+        face.setAttribute("stroke", "#ea580c");
+        mouth.setAttribute("d", "M 34 70 Q 50 62 66 70"); // Slight frown
+        leftBrow.setAttribute("d", "M 28 33 Q 35 31 42 33");
+        rightBrow.setAttribute("d", "M 58 33 Q 65 31 72 33");
+        label.innerText = "Low Energy / Strained";
+        label.style.color = "#f97316";
+    } else if (val == 3) {
+        face.setAttribute("fill", "#f59e0b");
+        face.setAttribute("stroke", "#d97706");
+        mouth.setAttribute("d", "M 34 68 Q 50 68 66 68"); // Flat neutral
+        leftBrow.setAttribute("d", "M 28 32 Q 35 32 42 32");
+        rightBrow.setAttribute("d", "M 58 32 Q 65 32 72 32");
+        label.innerText = "Steady / Managing Baseline";
+        label.style.color = "#f59e0b";
+    } else if (val == 4) {
+        face.setAttribute("fill", "#84cc16");
+        face.setAttribute("stroke", "#65a30d");
+        mouth.setAttribute("d", "M 32 64 Q 50 72 68 64"); // Soft smile
+        leftBrow.setAttribute("d", "M 28 30 Q 35 29 42 32");
+        rightBrow.setAttribute("d", "M 58 32 Q 65 29 72 30");
+        label.innerText = "Good / Resilient";
+        label.style.color = "#84cc16";
+    } else {
+        face.setAttribute("fill", "#10b981");
+        face.setAttribute("stroke", "#059669");
+        mouth.setAttribute("d", "M 30 62 Q 50 78 70 62"); // Big grin
+        leftBrow.setAttribute("d", "M 28 29 Q 35 27 42 31");
+        rightBrow.setAttribute("d", "M 58 31 Q 65 27 72 29");
+        label.innerText = "Optimal Vitality / Energized";
+        label.style.color = "#10b981";
+    }
+}
+</script>
+"""
+components.html(face_html, height=210)
 
-    # Key Milestone Metrics
-    def get_parity_month(traj):
-        for idx, val in enumerate(traj):
-            if val >= 0:
-                return idx
-        return None
+# Inputs for Feeling Scale & Heart Rate
+col_m1, col_m2 = st.columns([2, 1])
 
-    p_custom = get_parity_month(proj_custom)
-    parity_str = f"Month {p_custom} ({['Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'][(p_custom-1)%12]} {2026 + (p_custom+9)//12})" if p_custom else "Beyond 48m"
-
-    col_m1, col_m2, col_m3 = st.columns(3)
-    with col_m1:
-        st.metric("£0 Debt Parity Milestone", parity_str)
-    with col_m2:
-        st.metric("Year 2 Balance (Oct 2028)", f"£{proj_custom[24]:,.0f}", delta=f"{proj_custom[24]-starting_net:+,.0f}")
-    with col_m3:
-        st.metric("Year 4 Balance (Oct 2030)", f"£{proj_custom[48]:,.0f}", delta=f"{proj_custom[48]-starting_net:+,.0f}")
-
-    # Plotly Visual Curve
-    dates = pd.date_range(start="2026-10-01", periods=49, freq="MS")
-    fig = go.Figure()
-
-    fig.add_trace(go.Scatter(
-        x=dates, y=proj_custom,
-        mode="lines",
-        name="Your Dynamic Plan",
-        line=dict(color="#0D9488", width=4)
-    ))
-    fig.add_trace(go.Scatter(
-        x=dates, y=proj_aggressive,
-        mode="lines",
-        name="Aggressive Snowball",
-        line=dict(color="#059669", width=2, dash="dot")
-    ))
-    fig.add_trace(go.Scatter(
-        x=dates, y=proj_drift,
-        mode="lines",
-        name="Unbuffered Drift",
-        line=dict(color="#EF4444", width=2, dash="dash")
-    ))
-
-    # Zero Line
-    fig.add_hline(y=0, line_dash="solid", line_color="#94A3B8", annotation_text="£0 Parity (Debt Free)", annotation_position="top left")
-
-    fig.update_layout(
-        title="Projected Net Trajectory (48 Months)",
-        margin=dict(l=10, r=10, t=40, b=20),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis_title="",
-        yaxis_title="Net Worth (£)",
-        hovermode="x unified",
-        template="plotly_white"
+with col_m1:
+    mood_score = st.select_slider(
+        "Feeling Scale",
+        options=[1, 2, 3, 4, 5],
+        value=3,
+        format_func=lambda x: {
+            1: "1 - Exhausted",
+            2: "2 - Low",
+            3: "3 - Steady",
+            4: "4 - Good",
+            5: "5 - Energised"
+        }[x]
     )
-    st.plotly_chart(fig, use_container_width=True)
 
-# ---------------------------------------------------------
-# TAB 3: SINKING FUNDS & CAR POTS (Preventing the Dips)
-# ---------------------------------------------------------
-with tab_sinking:
-    st.subheader("🛡️ Virtual Sinking Pots")
-    st.caption("Prevent sudden £500-£1,000 drops on your chart by building dedicated buffers.")
+with col_m2:
+    heart_rate = st.number_input(
+        "Heart Rate (BPM)",
+        min_value=40,
+        max_value=180,
+        value=68,
+        step=1,
+        help="Enter resting morning heart rate or post-shift reading."
+    )
 
-    funds_df = get_sinking_funds()
-    for _, f in funds_df.iterrows():
-        pct = min(1.0, max(0.0, f["current_balance"] / f["target_buffer"]))
-        st.write(f"**{f['fund_name']}** — £{f['current_balance']:.0f} / £{f['target_buffer']:.0f} ({pct*100:.0f}%)")
-        st.progress(pct)
-        with st.expander(f"Update {f['fund_name']} Balance"):
-            new_val = st.number_input(f"New Balance for {f['fund_name']}", value=float(f["current_balance"]), step=20.0, key=f["fund_name"])
-            if st.button(f"Save {f['fund_name']}", key=f"btn_{f['fund_name']}"):
-                update_sinking_fund(f["fund_name"], new_val)
-                st.rerun()
+st.divider()
 
-# ---------------------------------------------------------
-# TAB 4: FIXED BUDGET BREAKDOWN
-# ---------------------------------------------------------
-with tab_budget:
-    st.subheader("📋 Core Household Budget Baseline")
-    st.caption("Synchronised with your active October 2026 finances.")
+# --- Daily Sleep & Shift Work Inputs ---
+st.subheader("Shift & Physical Load")
+col1, col2 = st.columns(2)
 
-    b_col1, b_col2 = st.columns(2)
-    with b_col1:
-        st.markdown("""
-        **Fixed Outgoings (£1,151.54/mo):**
-        - Rent: £495.37
-        - Council Tax: £139.15
-        - Octopus Electricity: £130.00
-        - Water: £52.85
-        - TV Licence: £15.00
-        - Broadband: £20.00
-        - Hometree: £20.91
-        - Building Insurance: £23.54
-        - VW Golf Mk6 (Tax & Ins): £43.39
-        - Kia Cee'd (Tax & Ins): £60.28
-        - Fuel: £100.00
-        - Life & Income Ins: £51.05
-        - Subscriptions (Phones, Disney+, Google, etc.): £81.01
-        """)
-    with b_col2:
-        st.markdown("""
-        **Flexible & Family Outgoings (£375.45/mo):**
-        - Groceries Baseline: £133.20
-        - School Dinners: £48.00
-        - School Uniforms: £15.00
-        - Kids Haircuts: £15.00
-        - Toiletries & Vapes: £25.00
-        - Birthdays / Kids Fund: £40.00
-        - Passports Fund: £18.25
+with col1:
+    sleep_hours = st.slider("Hours Slept", min_value=3.0, max_value=11.0, value=7.0, step=0.5)
+with col2:
+    shift_strain = st.slider("Work / Shift Strain (1-5)", min_value=1, max_value=5, value=3, 
+                             help="1: Off/Rest, 3: Standard Shift, 5: Heavy Overtime / Physically Grueling")
+
+# --- Biological Vitality Calculation ---
+# Target baseline 7.5 hrs sleep.
+sleep_debt = max(0.0, 7.5 - sleep_hours)
+
+# Heart rate penalty: HR > 75 resting elevates physical stress multiplier
+hr_penalty = max(0, (heart_rate - 75) * 0.4) if heart_rate > 75 else 0
+
+vitality_score = int(max(5, min(100, 
+    100 
+    - (sleep_debt * 12) 
+    - (shift_strain * 7) 
+    + ((mood_score - 3) * 6) 
+    - hr_penalty
+)))
+
+# Determine Vitality Status
+if vitality_score >= 75:
+    status_color = "#10b981"
+    status_text = "Optimal & Shielded"
+elif vitality_score >= 45:
+    status_color = "#f59e0b"
+    status_text = "Managing / Minor Strain"
+else:
+    status_color = "#ef4444"
+    status_text = "Burnout Risk: Physical Reserve Low"
+
+# Display Vitality Card
+st.markdown(f"""
+<div class="metric-card" style="border-left: 6px solid {status_color};">
+    <div style="font-size: 0.9rem; color: #94a3b8;">Biological Vitality Index</div>
+    <div style="font-size: 2.2rem; font-weight: 700; color: {status_color};">{vitality_score} / 100</div>
+    <div style="font-size: 0.95rem; font-weight: 500; color: #e2e8f0;">{status_text}</div>
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# --- Household Economic Buffer ---
+st.subheader("Family Financial Runway")
+
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    savings_buffer = st.number_input("Liquid Emergency Cash (£)", min_value=0, value=3500, step=250)
+with col_f2:
+    weekly_burn = st.number_input("Baseline Weekly Essentials (£)", min_value=100, value=450, step=25, 
+                                 help="Mortgage/Rent, Food basics, Council tax, Utilities, Core transport")
+
+runway_weeks = round(savings_buffer / weekly_burn, 1)
+
+# Financial Runway Card
+runway_color = "#10b981" if runway_weeks >= 12 else ("#f59e0b" if runway_weeks >= 6 else "#ef4444")
+st.markdown(f"""
+<div class="metric-card" style="border-left: 6px solid {runway_color};">
+    <div style="font-size: 0.9rem; color: #94a3b8;">Safe Financial Runway</div>
+    <div style="font-size: 2.2rem; font-weight: 700; color: {runway_color};">{runway_weeks} Weeks</div>
+    <div style="font-size: 0.85rem; color: #94a3b8;">Time household can fully cover essentials without new income</div>
+</div>
+""", unsafe_allow_html=True)
+
+# --- Shield Warning Indicator (The Link Between Body & Bank) ---
+if vitality_score < 45 and runway_weeks < 8:
+    st.error("⚠️ CRITICAL SHIELD ALERT: High physical fatigue combined with an emergency buffer under 8 weeks. Taking sudden unpaid sickness or missing overtime creates acute budget vulnerability.")
+elif vitality_score < 45:
+    st.warning("⚠️ VITALITY WARNING: Physical reserves are drained. Your cash buffer absorbs the shock, but prioritize sleep and active recovery to avoid forced time off.")
+
+# --- Save Today's Pulse to Local History ---
+st.divider()
+DATA_FILE = "lifeshield_history.csv"
+
+if st.button("💾 Save Today's Check-in to History", use_container_width=True):
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    new_entry = pd.DataFrame([{
+        "Date": today,
+        "Mood": mood_score,
+        "HeartRate": heart_rate,
+        "Sleep": sleep_hours,
+        "Strain": shift_strain,
+        "Vitality": vitality_score,
+        "RunwayWeeks": runway_weeks
+    }])
+    
+    if os.path.exists(DATA_FILE):
+        history_df = pd.read_csv(DATA_FILE)
+        # Avoid duplicate entries for the same date
+        history_df = history_df[history_df["Date"] != today]
+        history_df = pd.concat([history_df, new_entry], ignore_index=True)
+    else:
+        history_df = new_entry
         
-        **Active Debt Repayments (£230.00/mo):**
-        - Virgin Money 0% CC: £200.00 *(Clears by ~Month 18)*
-        - HMRC: £30.00
-        """)
+    history_df.to_csv(DATA_FILE, index=False)
+    st.success(f"Saved check-in for {today}!")
+
+# Display Historical Trends if available
+if os.path.exists(DATA_FILE):
+    st.subheader("Historical Mood & Vitality Trends")
+    hist = pd.read_csv(DATA_FILE)
+    if len(hist) > 1:
+        st.line_chart(hist.set_index("Date")[["Vitality", "Mood", "RunwayWeeks"]])
+    else:
+        st.caption("Log at least 2 days to visualize correlation curves.")
