@@ -47,6 +47,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+DATA_FILE = "lifeshield_history.csv"
+
+# --- Helper: Load History & Calculate Adaptive Baselines ---
+def load_history():
+    if os.path.exists(DATA_FILE):
+        try:
+            df = pd.read_csv(DATA_FILE)
+            df["Date"] = pd.to_datetime(df["Date"]).dt.date
+            return df.sort_values("Date")
+        except Exception:
+            return pd.DataFrame()
+    return pd.DataFrame()
+
 # --- Session State Management ---
 if "current_step" not in st.session_state:
     st.session_state.current_step = 1
@@ -58,11 +71,10 @@ if "daily_data" not in st.session_state:
         "sleep": 7.0,
         "strain": 3,
         "cognitive_clarity": 3,
-        "physical_tension": 2,
-        "social_battery": 3,
-        "financial_anxiety": 2,
+        "physical_ease": 3,
+        "social_patience": 3,
+        "financial_calm": 3,
         "vitality": 72,
-        "predictive_burnout_risk": "Low",
         "financial_score": 70,
         "savings": 3500,
         "weekly_burn": 450,
@@ -70,17 +82,16 @@ if "daily_data" not in st.session_state:
     }
 
 # ==============================================================================
-# SCREEN 1: REAL-SKY MOOD FACE & BEHAVIORAL PREDICTIVE ENGINE
+# SCREEN 1: REAL-SKY MOOD FACE & ADAPTIVE CHECK-IN
 # ==============================================================================
 if st.session_state.current_step == 1:
     st.title("🛡️ LifeShield")
-    st.caption("Daily Biometrics & Behavioral Shield")
+    st.caption("Daily Biometrics & Adaptive Health Pulse")
 
     # Real-Life Sky & Clouds Component with Seamless Drift Animation
     real_sky_face_html = """
     <div style="position: relative; overflow: hidden; border-radius: 24px; padding: 32px 16px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; box-shadow: 0 16px 35px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center;">
         
-        <!-- Photographic Real-Life Moving Sky Background -->
         <style>
             @keyframes panClouds {
                 0% { background-position: 0% 50%; }
@@ -144,7 +155,6 @@ if st.session_state.current_step == 1:
         <div class="face-wrapper">
             <div style="font-size: 1.3rem; font-weight: 700; color: #ffffff; text-shadow: 0 2px 10px rgba(0,0,0,0.8); margin-bottom: 18px;">How are you feeling right now?</div>
 
-            <!-- Dynamic Reactive SVG Face -->
             <svg id="moodFace" class="interactive-face" width="130" height="130" viewBox="0 0 100 100">
                 <circle id="faceBg" cx="50" cy="50" r="45" fill="#f59e0b" stroke="#d97706" stroke-width="3.5"/>
                 <circle id="leftEye" cx="35" cy="40" r="4.5" fill="#0f172a"/>
@@ -154,10 +164,8 @@ if st.session_state.current_step == 1:
                 <path id="mouth" d="M 34 68 Q 50 68 66 68" stroke="#0f172a" stroke-width="4" stroke-linecap="round" fill="none"/>
             </svg>
 
-            <!-- State Title -->
             <div id="moodTitle" style="margin-top: 14px; font-weight: 800; color: #f59e0b; font-size: 1.15rem; text-shadow: 0 2px 8px rgba(0,0,0,0.8);">Managing baseline</div>
 
-            <!-- Clean Slider (Zero text underneath) -->
             <input type="range" min="1" max="5" value="3" class="clean-slider" id="moodRange" oninput="handleSlide(this.value)">
         </div>
     </div>
@@ -216,7 +224,7 @@ if st.session_state.current_step == 1:
     """
     components.html(real_sky_face_html, height=310)
 
-    # Biometric Row
+    # Biometrics Row
     col_hr, col_sleep = st.columns(2)
     with col_hr:
         hr_input = st.number_input(
@@ -231,116 +239,120 @@ if st.session_state.current_step == 1:
         sleep_input = st.slider("Hours Slept", 3.0, 11.0, float(st.session_state.daily_data["sleep"]), 0.5)
 
     strain_input = st.slider("Work / Shift Strain (1-5)", 1, 5, int(st.session_state.daily_data["strain"]),
-                            help="1: Off/Rest, 3: Standard Shift, 5: Heavy Overtime / Heavy Physical Demand")
+                            help="1: Off/Rest Day, 3: Standard Shift, 5: Heavy Overtime / Physically Exhausting")
 
     st.divider()
 
-    # --- 4 Evidence-Based Behavioral Signals (Predicting 14-Day Trajectory) ---
-    st.subheader("🧠 Predictive Behavioral Signals")
-    st.caption("Evidence-based markers from allostatic load models that forecast burnout before it hits.")
+    # --- Evidence-Based Behavioral Signals (Left = Negative, Right = Positive) ---
+    st.subheader("🧠 Behavioral & Focus Signals")
+    st.caption("Standardized: Left is negative/fatigued, Right is positive/optimal.")
 
     b_col1, b_col2 = st.columns(2)
     with b_col1:
         cognitive_clarity = st.select_slider(
-            "Focus / Decision Friction",
+            "Focus / Clarity",
             options=[1, 2, 3, 4, 5],
             value=st.session_state.daily_data["cognitive_clarity"],
             format_func=lambda x: {
-                1: "1 - Heavy Brain Fog",
-                2: "2 - Sluggish / Distracted",
-                3: "3 - Standard Focus",
-                4: "4 - Sharp & Decisive",
+                1: "1 - Brain Fog",
+                2: "2 - Sluggish",
+                3: "3 - Standard",
+                4: "4 - Clear",
                 5: "5 - Peak Flow"
             }[x]
         )
-        physical_tension = st.select_slider(
-            "Body Tension / Heaviness",
+        physical_ease = st.select_slider(
+            "Physical Comfort",
             options=[1, 2, 3, 4, 5],
-            value=st.session_state.daily_data["physical_tension"],
+            value=st.session_state.daily_data["physical_ease"],
             format_func=lambda x: {
-                1: "1 - Loose & Relaxed",
-                2: "2 - Normal Baseline",
-                3: "3 - Mild Tightness",
-                4: "4 - Stiff / Sore",
-                5: "5 - Heavy Physical Aches"
+                1: "1 - Heavy Aches",
+                2: "2 - Stiff / Sore",
+                3: "3 - Normal",
+                4: "4 - Limber",
+                5: "5 - Light & Rested"
             }[x]
         )
     with b_col2:
-        social_battery = st.select_slider(
-            "Social Battery & Patience",
+        social_patience = st.select_slider(
+            "Social Patience",
             options=[1, 2, 3, 4, 5],
-            value=st.session_state.daily_data["social_battery"],
+            value=st.session_state.daily_data["social_patience"],
             format_func=lambda x: {
-                1: "1 - Zero / Short Fuse",
+                1: "1 - Short Fuse",
                 2: "2 - Low Patience",
-                3: "3 - Steady / Neutral",
-                4: "4 - Warm & Patient",
-                5: "5 - Highly Connected"
+                3: "3 - Neutral",
+                4: "4 - Patient",
+                5: "5 - Connected"
             }[x]
         )
-        financial_anxiety = st.select_slider(
-            "Financial Dread / Friction",
+        financial_calm = st.select_slider(
+            "Financial Peace of Mind",
             options=[1, 2, 3, 4, 5],
-            value=st.session_state.daily_data["financial_anxiety"],
+            value=st.session_state.daily_data["financial_calm"],
             format_func=lambda x: {
-                1: "1 - Completely Relaxed",
-                2: "2 - Controlled",
-                3: "3 - Background Noise",
-                4: "4 - Noticeable Unease",
-                5: "5 - Acute Financial Dread"
+                1: "1 - High Dread",
+                2: "2 - Noticeable Unease",
+                3: "3 - Baseline",
+                4: "4 - In Control",
+                5: "5 - Calm & Confident"
             }[x]
         )
 
-    # --- Scientific Composite Vitality & Predictive Risk Formula ---
+    # --- Vitality Calculation ---
     sleep_debt = max(0.0, 7.5 - sleep_input)
-    hr_penalty = max(0, (hr_input - 75) * 0.45) if hr_input > 75 else 0
+    hr_penalty = max(0, (hr_input - 75) * 0.4) if hr_input > 75 else 0
 
-    # Behavioral strain penalty based on friction signals
-    behavioral_strain = (
-        (5 - cognitive_clarity) * 2.5 + 
-        physical_tension * 2.0 + 
-        (5 - social_battery) * 2.0 + 
-        financial_anxiety * 2.5
-    )
+    # Positive sum (scale 4 to 20): centered around baseline 12
+    behavioral_bonus = (cognitive_clarity + physical_ease + social_patience + financial_calm) - 12
 
     calculated_vitality = int(max(5, min(100, 
-        100 
-        - (sleep_debt * 11) 
+        85 
+        - (sleep_debt * 10) 
         - (strain_input * 6) 
-        - (behavioral_strain * 0.7) 
+        + (behavioral_bonus * 2.2) 
         - hr_penalty
     )))
 
-    # Forecast Risk Trajectory
-    if calculated_vitality < 45 or behavioral_strain > 22:
-        burnout_risk = "HIGH (Burnout imminent within 7-10 days if schedule persists)"
-        risk_color = "#ef4444"
-    elif calculated_vitality < 68 or behavioral_strain > 14:
-        burnout_risk = "MODERATE (Fatigue accumulating; schedule recovery recommended)"
-        risk_color = "#f59e0b"
-    else:
-        burnout_risk = "LOW (Physiologically shielded and resilient)"
-        risk_color = "#10b981"
+    # --- Historical Adaptive Correlation Engine ---
+    history_df = load_history()
+    rolling_vitality_avg = calculated_vitality
+    if not history_df.empty and "Vitality" in history_df.columns:
+        last_7_days = history_df.tail(7)["Vitality"].tolist()
+        rolling_vitality_avg = sum(last_7_days) / len(last_7_days)
 
-    # Save inputs into session
+    # Dynamic status classification based on current score & 7-day average
+    if calculated_vitality >= 75 and rolling_vitality_avg >= 70:
+        burnout_status = "Optimal Vitality (Strong, consistent physiological buffer)"
+        status_color = "#10b981"
+    elif calculated_vitality < 50 or rolling_vitality_avg < 55:
+        burnout_status = "High Burnout Risk (Fatigue accumulation threatening capacity)"
+        status_color = "#ef4444"
+    else:
+        burnout_status = "Managing Baseline (Steady, but monitor weekly recovery)"
+        status_color = "#f59e0b"
+
+    # Save to session state
     st.session_state.daily_data.update({
         "heart_rate": hr_input,
         "sleep": sleep_input,
         "strain": strain_input,
         "cognitive_clarity": cognitive_clarity,
-        "physical_tension": physical_tension,
-        "social_battery": social_battery,
-        "financial_anxiety": financial_anxiety,
+        "physical_ease": physical_ease,
+        "social_patience": social_patience,
+        "financial_calm": financial_calm,
         "vitality": calculated_vitality,
-        "predictive_burnout_risk": burnout_risk
+        "rolling_vitality_avg": round(rolling_vitality_avg, 1),
+        "burnout_status": burnout_status
     })
 
-    # Summary Badge
+    # Summary Display
     st.markdown(f"""
-    <div style="background-color: #131b2e; border-left: 6px solid {risk_color}; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">
+    <div style="background-color: #131b2e; border-left: 6px solid {status_color}; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">
         <div style="font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Calculated Biological Vitality</div>
-        <div style="font-size: 2.2rem; font-weight: 800; color: {risk_color};">{calculated_vitality} / 100</div>
-        <div style="font-size: 0.85rem; color: {risk_color}; font-weight: 600; margin-top: 4px;">{burnout_risk}</div>
+        <div style="font-size: 2.2rem; font-weight: 800; color: {status_color};">{calculated_vitality} / 100</div>
+        <div style="font-size: 0.88rem; color: {status_color}; font-weight: 600; margin-top: 4px;">{burnout_status}</div>
+        <div style="font-size: 0.78rem; color: #8b949e; margin-top: 4px;">7-Day Rolling Vitality Average: <b>{round(rolling_vitality_avg, 1)}</b></div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -365,7 +377,7 @@ elif st.session_state.current_step == 2:
     st.session_state.daily_data["financial_score"] = financial_health_score
 
     # Bubble 1: Biological Vitality State
-    v_color = "#10b981" if vitality >= 70 else ("#f59e0b" if vitality >= 45 else "#ef4444")
+    v_color = "#10b981" if vitality >= 75 else ("#f59e0b" if vitality >= 50 else "#ef4444")
     
     st.markdown(f"""
     <div class="bubble-card" style="border-color: {v_color};">
@@ -373,7 +385,7 @@ elif st.session_state.current_step == 2:
         <div style="font-size: 1.1rem; font-weight: 600; color: #94a3b8;">Biological Vitality Index</div>
         <div style="font-size: 3.6rem; font-weight: 800; color: {v_color}; margin: 8px 0;">{vitality}<span style="font-size: 1.5rem; color: #94a3b8;">/100</span></div>
         <div style="color: {v_color}; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">
-            {st.session_state.daily_data['predictive_burnout_risk']}
+            {st.session_state.daily_data['burnout_status']}
         </div>
         <div style="margin-top: 14px; color: #cbd5e1; font-size: 0.92rem;">
             Sleep: <b>{st.session_state.daily_data['sleep']}h</b> | HR: <b>{st.session_state.daily_data['heart_rate']} BPM</b> | Shift Load: <b>{st.session_state.daily_data['strain']}/5</b>
@@ -399,6 +411,10 @@ elif st.session_state.current_step == 2:
     </div>
     """, unsafe_allow_html=True)
 
+    # Coupled Stress Warning
+    if vitality < 55 and runway_weeks < 8:
+        st.error("⚠️ COUPLED RISK ALERT: Persistent low vitality alongside a thin financial buffer (< 8 weeks). Physical downtime risks acute financial friction.")
+
     # Navigation Buttons
     st.write("")
     col_back, col_next = st.columns([1, 2])
@@ -412,11 +428,11 @@ elif st.session_state.current_step == 2:
             st.rerun()
 
 # ==============================================================================
-# SCREEN 3: INTERACTIVE SAVINGS, INCOME & FUTURE BLIP SIMULATOR
+# SCREEN 3: INTERACTIVE PLANNER, BLIP SIMULATOR & CSV EXPORT
 # ==============================================================================
 elif st.session_state.current_step == 3:
     st.title("🛡️ Financial Shield & Planner")
-    st.caption("Step 3 of 3: Interactive Budget & Future Blip Testing")
+    st.caption("Step 3 of 3: Interactive Budget & Data Management")
 
     st.subheader("Household Economic Controls")
     col_sav, col_burn = st.columns(2)
@@ -433,7 +449,7 @@ elif st.session_state.current_step == 3:
             min_value=100, 
             value=int(st.session_state.daily_data["weekly_burn"]), 
             step=25,
-            help="Fixed basics: rent/mortgage, council tax, food essentials, core bills"
+            help="Fixed basics: rent/mortgage, council tax, food essentials, core transport"
         )
 
     income_adj = st.number_input(
@@ -461,7 +477,6 @@ elif st.session_state.current_step == 3:
     with blip_col2:
         unpaid_rest_weeks = st.slider("Fatigue / Unpaid Recovery (Weeks)", 0, 4, 0, 1)
 
-    # Calculate Impact of Blip
     blip_savings = max(0, savings_adj - vehicle_blip - (unpaid_rest_weeks * burn_adj))
     blip_runway = round(blip_savings / burn_adj, 1)
 
@@ -478,21 +493,20 @@ elif st.session_state.current_step == 3:
     </div>
     """, unsafe_allow_html=True)
 
-    # Save Check-in Entry to CSV File
     st.divider()
-    DATA_FILE = "lifeshield_history.csv"
 
-    if st.button("💾 Commit Today's Log to Long-Term Trends", use_container_width=True, type="primary"):
-        today = datetime.date.today().strftime("%Y-%m-%d")
+    # Save Check-in Entry to CSV
+    if st.button("💾 Lock Today's Log to History", use_container_width=True, type="primary"):
+        today = datetime.date.today()
         new_row = pd.DataFrame([{
             "Date": today,
             "HeartRate": st.session_state.daily_data["heart_rate"],
             "Sleep": st.session_state.daily_data["sleep"],
             "Strain": st.session_state.daily_data["strain"],
             "CognitiveClarity": st.session_state.daily_data["cognitive_clarity"],
-            "PhysicalTension": st.session_state.daily_data["physical_tension"],
-            "SocialBattery": st.session_state.daily_data["social_battery"],
-            "FinancialAnxiety": st.session_state.daily_data["financial_anxiety"],
+            "PhysicalEase": st.session_state.daily_data["physical_ease"],
+            "SocialPatience": st.session_state.daily_data["social_patience"],
+            "FinancialCalm": st.session_state.daily_data["financial_calm"],
             "Vitality": st.session_state.daily_data["vitality"],
             "FinancialScore": st.session_state.daily_data["financial_score"],
             "Savings": savings_adj,
@@ -501,19 +515,50 @@ elif st.session_state.current_step == 3:
 
         if os.path.exists(DATA_FILE):
             history_df = pd.read_csv(DATA_FILE)
+            history_df["Date"] = pd.to_datetime(history_df["Date"]).dt.date
             history_df = history_df[history_df["Date"] != today]
             history_df = pd.concat([history_df, new_row], ignore_index=True)
         else:
             history_df = new_row
 
         history_df.to_csv(DATA_FILE, index=False)
-        st.success(f"Check-in successfully locked for {today}!")
+        st.success(f"Check-in locked for {today}!")
 
-    if os.path.exists(DATA_FILE):
-        hist = pd.read_csv(DATA_FILE)
-        if len(hist) > 1:
-            st.subheader("Historical Vitality vs Financial Shield")
-            st.line_chart(hist.set_index("Date")[["Vitality", "FinancialScore", "RunwayWeeks"]])
+    # --- Historical Trends & Custom CSV Export ---
+    st.divider()
+    st.subheader("📊 History & Data Export")
+
+    history_df = load_history()
+    if not history_df.empty:
+        if len(history_df) > 1:
+            st.line_chart(history_df.set_index("Date")[["Vitality", "FinancialScore", "RunwayWeeks"]])
+
+        # Custom Date Range Selector for CSV Export
+        min_date = history_df["Date"].min()
+        max_date = history_df["Date"].max()
+
+        st.markdown("##### Download Your Collected Data")
+        export_range = st.date_input(
+            "Select Date Range to Export",
+            value=(min_date, max_date),
+            min_value=min_date,
+            max_value=max_date
+        )
+
+        if isinstance(export_range, tuple) and len(export_range) == 2:
+            start_d, end_d = export_range
+            filtered_df = history_df[(history_df["Date"] >= start_d) & (history_df["Date"] <= end_d)]
+            csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+
+            st.download_button(
+                label=f"📥 Download CSV ({start_d} to {end_d})",
+                data=csv_data,
+                file_name=f"lifeshield_data_{start_d}_{end_d}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+    else:
+        st.caption("No history entries recorded yet. Click 'Lock Today's Log' above to start your log.")
 
     if st.button("← Return to Daily Pulse", use_container_width=True):
         st.session_state.current_step = 1
