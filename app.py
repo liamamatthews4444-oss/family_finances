@@ -109,13 +109,16 @@ def load_live_sheet_data():
         chart_df = df_hist.set_index("Date")[["Debt Remaining (£)", "Stored Cash (£)"]]
 
         df_full = pd.read_csv(SHEET_CSV_URL, header=None)
-        sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
+       sav = pd.to_numeric(str(df_full.iloc[46, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
         inv = pd.to_numeric(str(df_full.iloc[47, 6]).replace(",", "").replace("£", "").strip(), errors="coerce")
-        return chart_df, float(sav) if pd.notnull(sav) else 1287.0, float(inv) if pd.notnull(inv) else 127.33
+        sav_val = float(sav) if pd.notnull(sav) else 1287.0
+        inv_val = float(inv) if pd.notnull(inv) else 127.33
+        reserves = round(sav_val + inv_val, 2)
+        return chart_df, sav_val, inv_val, reserves
     except Exception:
-        return pd.DataFrame(), 1287.0, 127.33
+        return pd.DataFrame(), 1287.0, 127.33, 1414.33
 
-live_chart_data, sheet_savings, sheet_investments = load_live_sheet_data()
+live_chart_data, sheet_savings, sheet_investments, sheet_total_reserves = load_live_sheet_data()
 
 # --- Session State ---
 if "current_step" not in st.session_state:
@@ -123,7 +126,9 @@ if "current_step" not in st.session_state:
 
 if "daily_data" not in st.session_state:
     st.session_state.daily_data = {
-        "mood": 3,
+if st.session_state.daily_data.get("savings") == 3500:
+    st.session_state.daily_data["savings"] = float(sheet_total_reserves)
+    "mood": 3,
         "heart_rate": 68,
         "sleep": 7.0,
         "strain": 3,
@@ -133,7 +138,7 @@ if "daily_data" not in st.session_state:
         "financial_calm": 3,
         "vitality": 72,
         "financial_score": 70,
-        "savings": 3500,
+        "savings": float(sheet_total_reserves),
         "monthly_nut": 1850
     }
 
