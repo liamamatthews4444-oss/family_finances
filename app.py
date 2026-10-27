@@ -26,6 +26,57 @@ st.markdown("""
         font-size: 2.8rem;
         font-weight: 800;
     }
+
+    /* Throbbing Red Alert Animation */
+    @keyframes throbPulseRed {
+        0% {
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+        50% {
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.85), inset 0 0 20px rgba(239, 68, 68, 0.45);
+            border-color: rgba(239, 68, 68, 1);
+            transform: scale(1.01);
+        }
+        100% {
+            box-shadow: 0 0 14px rgba(239, 68, 68, 0.4), inset 0 0 10px rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+    }
+
+    /* Gentle Green Resilient Glow Animation */
+    @keyframes steadyGlowGreen {
+        0% {
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.35), inset 0 0 8px rgba(16, 185, 129, 0.15);
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.7), inset 0 0 16px rgba(16, 185, 129, 0.3);
+        }
+        100% {
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.35), inset 0 0 8px rgba(16, 185, 129, 0.15);
+        }
+    }
+
+    /* Ambient Amber Glow Animation */
+    @keyframes steadyGlowAmber {
+        0% {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3), inset 0 0 8px rgba(245, 158, 11, 0.15);
+        }
+        50% {
+            box-shadow: 0 0 26px rgba(245, 158, 11, 0.6), inset 0 0 14px rgba(245, 158, 11, 0.25);
+        }
+        100% {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3), inset 0 0 8px rgba(245, 158, 11, 0.15);
+        }
+    }
+
+    .vitality-glow-box {
+        border-radius: 20px;
+        padding: 24px;
+        margin: 22px 0;
+        text-align: center;
+        transition: all 0.4s ease-in-out;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -217,15 +268,49 @@ if st.session_state.current_step == 1:
         "burnout_status": burnout_status
     })
 
-    with st.container(border=True):
-        st.caption("CALCULATED BIOLOGICAL VITALITY")
-        st.metric("Vitality Index", f"{calculated_vitality} / 100")
-        if calculated_vitality >= 75:
-            st.success(burnout_status)
-        elif calculated_vitality >= 50:
-            st.warning(burnout_status)
-        else:
-            st.error(burnout_status)
+   # Dynamic Blended Gradient & Animation styling based on state
+    if calculated_vitality >= 75:
+        # Green steady, energised glow
+        card_style = """
+            background: linear-gradient(145deg, #062e24 0%, #0b1716 100%);
+            border: 2px solid #10b981;
+            animation: steadyGlowGreen 3.5s ease-in-out infinite;
+        """
+        score_color = "#34d399"
+        status_color = "#6ee7b7"
+    elif calculated_vitality < 50 or rolling_vitality_avg < 55:
+        # Blended Red throbbing warning pulse
+        card_style = """
+            background: linear-gradient(145deg, #3b0d0c 0%, #170707 100%);
+            border: 2px solid #ef4444;
+            animation: throbPulseRed 1.8s ease-in-out infinite;
+        """
+        score_color = "#f87171"
+        status_color = "#fca5a5"
+    else:
+        # Amber/Orange baseline gentle glow
+        card_style = """
+            background: linear-gradient(145deg, #33200a 0%, #13100a 100%);
+            border: 2px solid #f59e0b;
+            animation: steadyGlowAmber 3.2s ease-in-out infinite;
+        """
+        score_color = "#fbbf24"
+        status_color = "#fcd34d"
+
+    vitality_card_html = f"""
+    <div class="vitality-glow-box" style="{card_style}">
+        <div style="font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 6px;">
+            CALCULATED BIOLOGICAL VITALITY
+        </div>
+        <div style="font-size: 3.4rem; font-weight: 800; color: {score_color}; line-height: 1.1; margin-bottom: 10px;">
+            {calculated_vitality} <span style="font-size: 1.4rem; font-weight: 600; color: #94a3b8;">/ 100</span>
+        </div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: {status_color};">
+            {burnout_status}
+        </div>
+    </div>
+    """
+    st.markdown(vitality_card_html, unsafe_allow_html=True)
 
     if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
         st.session_state.current_step = 2
