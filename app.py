@@ -460,6 +460,50 @@ elif st.session_state.current_step == 3:
         
         st.info("Fetching live spreadsheet curve...")
 
+    # --- Rolling Patterns & Life Balance Insights ---
+    st.divider()
+    st.subheader("🔍 Balance Insights & Moving Trends")
+
+    # Load local history (assuming history_df holds your logged rows)
+    if "history_df" in locals() and not history_df.empty and len(history_df) >= 3:
+        df_insights = history_df.copy()
+        
+        # Calculate 7-day rolling averages
+        rolling_cols = ["Vitality", "Sleep", "HeartRate", "SocialPatience", "FinancialCalm"]
+        available_cols = [c for c in rolling_cols if c in df_insights.columns]
+        
+        for c in available_cols:
+            df_insights[f"{c}_7d"] = df_insights[c].rolling(window=7, min_periods=1).mean()
+
+        # Display moving baseline charts
+        st.caption("7-Day Rolling Trend: Vitality vs. Sleep & Recovery")
+        st.line_chart(df_insights.set_index("Date")[[f"{c}_7d" for c in available_cols if f"{c}_7d" in df_insights.columns]])
+
+        # Pattern Flags / Drift Alerts
+        latest = df_insights.iloc[-1]
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if "Vitality_7d" in latest and latest["Vitality"] < (latest["Vitality_7d"] - 10):
+                st.warning(f"⚠️ Vitality dip: Today ({latest['Vitality']}) is below your 7-day baseline ({latest['Vitality_7d']:.1f}).")
+            else:
+                st.success(f"✅ Vitality stable: {latest.get('Vitality', 'N/A')} (7d avg: {latest.get('Vitality_7d', 0):.1f})")
+        with c2:
+            if "Sleep_7d" in latest and latest["Sleep"] < (latest["Sleep_7d"] - 1.0):
+                st.warning(f"⚠️ Sleep debt: {latest['Sleep']}h vs 7-day avg of {latest['Sleep_7d']:.1f}h.")
+            else:
+                st.info(f"😴 Sleep: {latest.get('Sleep', 'N/A')}h")
+        with c3:
+            if "DayType" in latest:
+                st.metric("Context", latest["DayType"])
+
+        # Correlation breakdown by DayType if enough records exist
+        if "DayType" in df_insights.columns and len(df_insights) >= 7:
+            with st.expander("📊 Baseline Averages by Environment / Shift Type"):
+                summary_by_type = df_insights.groupby("DayType")[["Sleep", "HeartRate", "Vitality", "FinancialCalm"]].mean().round(1)
+                st.dataframe(summary_by_type)
+    else:
+        st.info("Log at least 3 to 7 daily check-ins to activate rolling baselines and pattern correlation alerts.")
+
     st.divider()
 
     # Reality Blip Stress-Test
