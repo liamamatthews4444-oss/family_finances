@@ -15,35 +15,16 @@ st.set_page_config(
 # Custom Styling
 st.markdown("""
 <style>
-    .main {
-        background-color: #0b0f19;
-    }
-    .bubble-card {
-        background: linear-gradient(145deg, #131b2e, #0b0f19);
-        border: 2px solid #233554;
-        border-radius: 24px;
-        padding: 24px;
-        margin: 16px 0;
-        text-align: center;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-    .swipe-pill {
-        display: inline-block;
-        background-color: #1e293b;
-        color: #38bdf8;
-        padding: 8px 18px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        margin-bottom: 12px;
-        border: 1px solid #334155;
-        letter-spacing: 0.04em;
-    }
+    .main { background-color: #0b0f19; }
     div.stButton > button {
         border-radius: 12px;
         height: 3.2em;
         font-weight: 600;
         font-size: 1.05rem;
+    }
+    div[data-testid="stMetricValue"] {
+        font-size: 3rem;
+        font-weight: 800;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -60,7 +41,7 @@ def load_history():
             return pd.DataFrame()
     return pd.DataFrame()
 
-# --- Session State Management ---
+# --- Session State ---
 if "current_step" not in st.session_state:
     st.session_state.current_step = 1
 
@@ -91,7 +72,6 @@ if st.session_state.current_step == 1:
         with open("face.html", "r", encoding="utf-8") as f:
             components.html(f.read(), height=310)
 
-    # Biometrics Row
     col_hr, col_sleep = st.columns(2)
     with col_hr:
         hr_input = st.number_input(
@@ -99,8 +79,7 @@ if st.session_state.current_step == 1:
             min_value=40,
             max_value=175,
             value=int(st.session_state.daily_data["heart_rate"]),
-            step=1,
-            help="Resting morning HR or post-shift reading."
+            step=1
         )
     with col_sleep:
         sleep_input = st.slider(
@@ -114,12 +93,12 @@ if st.session_state.current_step == 1:
         "Work / Shift Strain (1-5)",
         1, 5,
         int(st.session_state.daily_data["strain"]),
-        help="1: Off/Rest Day, 3: Standard Shift, 5: Heavy Overtime / Physically Exhausting"
+        help="1: Rest Day, 3: Standard Shift, 5: Heavy Overtime"
     )
 
     st.divider()
-
     st.subheader("🧠 Behavioral & Focus Signals")
+
     b_col1, b_col2 = st.columns(2)
     with b_col1:
         cognitive_clarity = st.select_slider(
@@ -165,27 +144,19 @@ if st.session_state.current_step == 1:
             value=st.session_state.daily_data["financial_calm"],
             format_func=lambda x: {
                 1: "1 - High Dread",
-                2: "2 - Noticeable Unease",
+                2: "2 - Unease",
                 3: "3 - Baseline",
                 4: "4 - In Control",
                 5: "5 - Calm & Confident"
             }[x]
         )
 
-    # Dynamic Vitality Calculation
+    # Calculation
     sleep_debt = max(0.0, 7.5 - sleep_input)
     hr_penalty = max(0.0, (hr_input - 75) * 0.4) if hr_input > 75 else 0.0
     behavioral_bonus = (cognitive_clarity + physical_ease + social_patience + financial_calm) - 12
+    calculated_vitality = int(max(5, min(100, 85 - (sleep_debt * 10) - (strain_input * 6) + (behavioral_bonus * 2.2) - hr_penalty)))
 
-    calculated_vitality = int(max(5, min(100, 
-        85 
-        - (sleep_debt * 10) 
-        - (strain_input * 6) 
-        + (behavioral_bonus * 2.2) 
-        - hr_penalty
-    )))
-
-    # Historical Adaptive Correlation
     history_df = load_history()
     rolling_vitality_avg = calculated_vitality
     if not history_df.empty and "Vitality" in history_df.columns:
@@ -193,14 +164,11 @@ if st.session_state.current_step == 1:
         rolling_vitality_avg = sum(last_7_days) / len(last_7_days)
 
     if calculated_vitality >= 75 and rolling_vitality_avg >= 70:
-        burnout_status = "Optimal Vitality (Strong, consistent buffer)"
-        status_color = "#10b981"
+        burnout_status = "Optimal Vitality (Strong buffer)"
     elif calculated_vitality < 50 or rolling_vitality_avg < 55:
-        burnout_status = "High Burnout Risk (Fatigue accumulation)"
-        status_color = "#ef4444"
+        burnout_status = "High Burnout Risk (Fatigue accumulating)"
     else:
         burnout_status = "Managing Baseline (Steady)"
-        status_color = "#f59e0b"
 
     st.session_state.daily_data.update({
         "heart_rate": hr_input,
@@ -215,21 +183,22 @@ if st.session_state.current_step == 1:
         "burnout_status": burnout_status
     })
 
-    summary_box = (
-        '<div style="background-color: #131b2e; border-left: 6px solid ' + status_color + '; border-radius: 14px; padding: 16px; margin: 20px 0; text-align: center;">'
-        '<div style="font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Calculated Biological Vitality</div>'
-        '<div style="font-size: 2.2rem; font-weight: 800; color: ' + status_color + ';">' + str(calculated_vitality) + ' / 100</div>'
-        '<div style="font-size: 0.88rem; color: ' + status_color + '; font-weight: 600; margin-top: 4px;">' + burnout_status + '</div>'
-        '</div>'
-    )
-    st.markdown(summary_box, unsafe_allow_html=True)
+    with st.container(border=True):
+        st.caption("CALCULATED BIOLOGICAL VITALITY")
+        st.metric("Vitality Index", f"{calculated_vitality} / 100")
+        if calculated_vitality >= 75:
+            st.success(burnout_status)
+        elif calculated_vitality >= 50:
+            st.warning(burnout_status)
+        else:
+            st.error(burnout_status)
 
     if st.button("💾 Save Check-in & Review Status →", use_container_width=True, type="primary"):
         st.session_state.current_step = 2
         st.rerun()
 
 # ==============================================================================
-# SCREEN 2: BUBBLE STATUS CARDS (AUTO SCROLL TO TOP)
+# SCREEN 2: BUBBLE STATUS CARDS (NATIVE STREAMLIT CONTAINERS)
 # ==============================================================================
 elif st.session_state.current_step == 2:
     components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
@@ -246,22 +215,116 @@ elif st.session_state.current_step == 2:
     financial_health_score = int(min(100, max(10, (runway_weeks / 12.0) * 100)))
     st.session_state.daily_data["financial_score"] = financial_health_score
 
-    v_color = "#10b981" if vitality >= 75 else ("#f59e0b" if vitality >= 50 else "#ef4444")
-    f_color = "#10b981" if financial_health_score >= 70 else ("#f59e0b" if financial_health_score >= 45 else "#ef4444")
-    f_badge = "SHIELDED RUNWAY" if financial_health_score >= 70 else ("MODERATE BUFFER" if financial_health_score >= 45 else "VULNERABLE RUNWAY")
+    # Bubble 1: Biological Vitality
+    with st.container(border=True):
+        st.markdown("### 🔵 BIOLOGICAL VITALITY")
+        st.metric("Vitality Score", f"{vitality} / 100")
+        if vitality >= 75:
+            st.success(st.session_state.daily_data["burnout_status"])
+        elif vitality >= 50:
+            st.warning(st.session_state.daily_data["burnout_status"])
+        else:
+            st.error(st.session_state.daily_data["burnout_status"])
+        st.caption(f"Sleep: {st.session_state.daily_data['sleep']}h | HR: {st.session_state.daily_data['heart_rate']} BPM | Strain: {st.session_state.daily_data['strain']}/5")
 
-    b1_html = (
-        '<div class="bubble-card" style="border-color: ' + v_color + ';">'
-        '<div class="swipe-pill" style="color: #38bdf8; border-color: #0284c7;">BIOLOGICAL VITALITY</div>'
-        '<div style="font-size: 3.8rem; font-weight: 800; color: ' + v_color + '; margin: 8px 0;">' + str(vitality) + '<span style="font-size: 1.5rem; color: #8b949e;">/100</span></div>'
-        '<div style="color: ' + v_color + '; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px;">' + str(st.session_state.daily_data['burnout_status']) + '</div>'
-        '<div style="margin-top: 14px; color: #cbd5e1; font-size: 0.92rem;">'
-        'Sleep: <b>' + str(st.session_state.daily_data['sleep']) + 'h</b> | HR: <b>' + str(st.session_state.daily_data['heart_rate']) + ' BPM</b> | Shift: <b>' + str(st.session_state.daily_data['strain']) + '/5</b>'
-        '</div></div>'
-    )
-    st.markdown(b1_html, unsafe_allow_html=True)
+    # Bubble 2: Financial Health
+    with st.container(border=True):
+        st.markdown("### 🟢 FINANCIAL HEALTH")
+        st.metric("Health Score", f"{financial_health_score} / 100")
+        if financial_health_score >= 70:
+            st.success("SHIELDED RUNWAY")
+        elif financial_health_score >= 45:
+            st.warning("MODERATE BUFFER")
+        else:
+            st.error("VULNERABLE RUNWAY")
+        st.caption(f"Liquid Cushion: £{savings:,} | Safe Runway: {runway_weeks} Weeks")
 
-    b2_html = (
-        '<div class="bubble-card" style="border-color: ' + f_color + ';">'
-        '<div class="swipe-pill" style="color: #4ade80; border-color: #166534;">FINANCIAL HEALTH</div>'
-        '<div style="font-size: 3.8rem; font
+    if vitality < 55 and runway_weeks < 8:
+        st.error("⚠️ COUPLED RISK ALERT: Low vitality alongside thin savings runway (< 8 weeks).")
+
+    col_back, col_next = st.columns([1, 2])
+    with col_back:
+        if st.button("← Back", use_container_width=True):
+            st.session_state.current_step = 1
+            st.rerun()
+    with col_next:
+        if st.button("👉 Swipe to Financial Shield →", use_container_width=True, type="primary"):
+            st.session_state.current_step = 3
+            st.rerun()
+
+# ==============================================================================
+# SCREEN 3: FINANCIAL RESILIENCE SHIELD & TRAJECTORY
+# ==============================================================================
+elif st.session_state.current_step == 3:
+    components.html("<script>window.parent.scrollTo(0, 0);</script>", height=0)
+
+    st.title("🛡️ Financial Resilience Shield")
+    st.caption("Step 3 of 3: Core Stored Reserves & Trajectory")
+
+    col_sav, col_nut = st.columns(2)
+    with col_sav:
+        savings_adj = st.number_input(
+            "Stored Liquid Cash (£)",
+            min_value=0,
+            value=int(st.session_state.daily_data["savings"]),
+            step=250,
+            help="Total accessible emergency cash."
+        )
+    with col_nut:
+        nut_adj = st.number_input(
+            "Monthly Survival Nut (£)",
+            min_value=500,
+            value=int(st.session_state.daily_data["monthly_nut"]),
+            step=50,
+            help="Fixed essentials: housing, council tax, core food, utilities, fixed debt."
+        )
+
+    st.session_state.daily_data["savings"] = savings_adj
+    st.session_state.daily_data["monthly_nut"] = nut_adj
+
+    weekly_burn = nut_adj / 4.33
+    calc_runway = round(savings_adj / weekly_burn, 1)
+
+    # Native Runway Display
+    with st.container(border=True):
+        st.caption("AUTOPILOT FAMILY RUNWAY")
+        st.metric("Survival Runway", f"{calc_runway} Weeks")
+        if calc_runway >= 12:
+            st.success("Solid buffer: Over 3 months of survival expenses secured.")
+        elif calc_runway >= 6:
+            st.warning("Moderate buffer: 6 to 12 weeks of survival expenses.")
+        else:
+            st.error("Thin buffer: Under 6 weeks of essential living costs.")
+
+    st.divider()
+
+    # 4-Year Long-Term Debt-to-0 & Wealth Trajectory
+    st.subheader("📈 4-Year Debt-to-0 & Wealth Curve")
+    st.caption("Structural journey from historical debt into positive reserves.")
+
+    wealth_data = pd.DataFrame({
+        "Period": ["2023 H1", "2023 H2", "2024 H1", "2024 H2", "2025 H1", "2025 H2", "2026 H1", "Present"],
+        "Debt Remaining": [8200, 6800, 5400, 3900, 2400, 1100, 450, 0],
+        "Liquid Reserves": [800, 1100, 1400, 1900, 2400, 2900, 3200, savings_adj]
+    }).set_index("Period")
+
+    st.line_chart(wealth_data)
+
+    st.divider()
+
+    # Reality Blip Stress-Test
+    st.subheader("⚡ Reality 'Blip' Stress-Test")
+    st.caption("Test how unforeseen friction affects your runway.")
+
+    blip_col1, blip_col2 = st.columns(2)
+    with blip_col1:
+        vehicle_blip = st.slider("Emergency Repair (£)", 0, 2000, 0, 100)
+    with blip_col2:
+        unpaid_rest_weeks = st.slider("Unpaid Leave (Weeks)", 0, 4, 0, 1)
+
+    blip_savings = max(0, savings_adj - vehicle_blip - (unpaid_rest_weeks * weekly_burn))
+    blip_runway = round(blip_savings / weekly_burn, 1)
+
+    with st.container(border=True):
+        r1, r2 = st.columns(2)
+        with r1:
