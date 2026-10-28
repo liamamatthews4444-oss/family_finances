@@ -460,6 +460,15 @@ elif st.session_state.current_step == 3:
         
         st.info("Fetching live spreadsheet curve...")
 
+    # Load daily check-in history from your published Google Sheet tab
+    checkin_csv_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQWfPuwVhgOaEDmChEHK55I0ic9mo9cKyxGD15ah14IjgH613gQVd8zzH310afsTzUIOY112cBUV0Vj/pub?gid=0&single=true&output=csv"
+    try:
+        history_df = pd.read_csv(checkin_csv_url)
+        history_df["Date"] = pd.to_datetime(history_df["Date"], errors="coerce")
+        history_df = history_df.dropna(subset=["Date"]).sort_values("Date")
+    except Exception:
+        history_df = pd.DataFrame()
+
     # --- Rolling Patterns & Life Balance Insights ---
     st.divider()
     st.subheader("🔍 Balance Insights & Moving Trends")
